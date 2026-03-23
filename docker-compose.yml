@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: budget
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: budget
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - budget_net
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      BIND_ADDR: ${BIND_ADDR}
+      RUST_LOG: ${RUST_LOG}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+    depends_on:
+      - db
+    networks:
+      - budget_net
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - budget_net
+
+volumes:
+  db_data:
+
+networks:
+  budget_net:
