@@ -72,6 +72,16 @@ fn build_router(pool: db::Db) -> Router {
             get(handlers::categories::get_one)
                 .patch(handlers::categories::update)
                 .delete(handlers::categories::delete),
+        )
+        .route(
+            "/transactions",
+            axum::routing::post(handlers::transactions::create),
+        )
+        .route(
+            "/transactions/:id",
+            get(handlers::transactions::get_one)
+                .patch(handlers::transactions::update)
+                .delete(handlers::transactions::delete),
         );
 
     Router::new()
