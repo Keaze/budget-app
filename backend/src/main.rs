@@ -54,6 +54,16 @@ async fn main() {
 fn build_router(pool: db::Db) -> Router {
     let api = Router::new()
         .route(
+            "/accounts",
+            get(handlers::accounts::list).post(handlers::accounts::create),
+        )
+        .route(
+            "/accounts/:id",
+            get(handlers::accounts::get_one)
+                .patch(handlers::accounts::update)
+                .delete(handlers::accounts::delete),
+        )
+        .route(
             "/categories",
             get(handlers::categories::list).post(handlers::categories::create),
         )
