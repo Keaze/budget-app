@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     Json,
 };
@@ -8,11 +8,30 @@ use uuid::Uuid;
 use crate::{
     db::Db,
     error::AppError,
-    models::transaction::{CreateTransactionRequest, Transaction, UpdateTransactionRequest},
+    models::transaction::{
+        CreateTransactionRequest, Transaction, TransactionListResponse, TransactionQuery,
+        UpdateTransactionRequest,
+    },
     queries::transactions,
 };
 
 const VALID_TRANSACTION_TYPES: &[&str] = &["INCOME", "EXPENSE", "TRANSFER"];
+
+#[tracing::instrument(skip(db))]
+pub async fn list(
+    State(db): State<Db>,
+    Query(params): Query<TransactionQuery>,
+) -> Result<Json<TransactionListResponse>, AppError> {
+    let (data, total) = transactions::list(&db, &params).await?;
+    let page = params.page.unwrap_or(1).max(1);
+    let page_size = params.page_size.unwrap_or(50).clamp(1, 100);
+    Ok(Json(TransactionListResponse {
+        data,
+        page,
+        page_size,
+        total,
+    }))
+}
 
 #[tracing::instrument(skip(db))]
 pub async fn create(

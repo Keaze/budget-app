@@ -3,6 +3,27 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+#[derive(Debug, Deserialize, Default)]
+pub struct TransactionQuery {
+    pub account_id: Option<Uuid>,
+    pub category_id: Option<Uuid>,
+    pub transaction_type: Option<String>,
+    pub date_from: Option<DateTime<Utc>>,
+    pub date_to: Option<DateTime<Utc>>,
+    pub page: Option<i64>,
+    pub page_size: Option<i64>,
+    pub sort_by: Option<String>,
+    pub sort_order: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TransactionListResponse {
+    pub data: Vec<Transaction>,
+    pub page: i64,
+    pub page_size: i64,
+    pub total: i64,
+}
+
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct Transaction {
     pub id: Uuid,

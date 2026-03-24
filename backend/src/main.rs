@@ -75,7 +75,7 @@ fn build_router(pool: db::Db) -> Router {
         )
         .route(
             "/transactions",
-            axum::routing::post(handlers::transactions::create),
+            get(handlers::transactions::list).post(handlers::transactions::create),
         )
         .route(
             "/transactions/:id",
