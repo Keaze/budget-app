@@ -52,8 +52,21 @@ async fn main() {
 }
 
 fn build_router(pool: db::Db) -> Router {
+    let api = Router::new()
+        .route(
+            "/categories",
+            get(handlers::categories::list).post(handlers::categories::create),
+        )
+        .route(
+            "/categories/:id",
+            get(handlers::categories::get_one)
+                .patch(handlers::categories::update)
+                .delete(handlers::categories::delete),
+        );
+
     Router::new()
         .route("/health", get(|| async { "OK" }))
+        .nest("/api/v1", api)
         .layer(TraceLayer::new_for_http())
         .layer(CorsLayer::permissive())
         .with_state(pool)

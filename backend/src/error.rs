@@ -16,6 +16,9 @@ pub enum AppError {
     #[error("conflict: {0}")]
     Conflict(String),
 
+    #[error("forbidden: {0}")]
+    Forbidden(String),
+
     #[error("internal error: {0}")]
     Internal(#[from] anyhow::Error),
 }
@@ -38,6 +41,7 @@ impl IntoResponse for AppError {
             AppError::NotFound => StatusCode::NOT_FOUND,
             AppError::BadRequest(_) => StatusCode::BAD_REQUEST,
             AppError::Conflict(_) => StatusCode::CONFLICT,
+            AppError::Forbidden(_) => StatusCode::FORBIDDEN,
             AppError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
         let message = match &self {
@@ -80,6 +84,13 @@ mod tests {
         let (status, body) = response_body(AppError::Conflict("already exists".into())).await;
         assert_eq!(status, StatusCode::CONFLICT);
         assert!(body["error"].as_str().unwrap().contains("already exists"));
+    }
+
+    #[tokio::test]
+    async fn forbidden_returns_403_with_message() {
+        let (status, body) = response_body(AppError::Forbidden("read-only".into())).await;
+        assert_eq!(status, StatusCode::FORBIDDEN);
+        assert!(body["error"].as_str().unwrap().contains("read-only"));
     }
 
     #[tokio::test]
