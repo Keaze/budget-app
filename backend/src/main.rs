@@ -82,6 +82,18 @@ fn build_router(pool: db::Db) -> Router {
             get(handlers::transactions::get_one)
                 .patch(handlers::transactions::update)
                 .delete(handlers::transactions::delete),
+        )
+        .route(
+            "/reports/account-balances",
+            get(handlers::reports::account_balances),
+        )
+        .route(
+            "/reports/spending-by-category",
+            get(handlers::reports::spending_by_category),
+        )
+        .route(
+            "/reports/monthly-summary",
+            get(handlers::reports::monthly_summary),
         );
 
     Router::new()

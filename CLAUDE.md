@@ -26,9 +26,9 @@ budget-app/
       main.rs                # router setup, DB pool init, migrations on startup
       db.rs                  # type alias: Db = sqlx::PgPool
       error.rs               # AppError enum + IntoResponse + From<sqlx::Error>
-      models/                # serde structs (one file per resource)
-      handlers/              # axum handlers (one file per resource)
-      queries/               # sqlx query functions (one file per resource)
+      models/                # serde structs (one file per resource) — see models/CLAUDE.md
+      handlers/              # axum handlers (one file per resource) — see handlers/CLAUDE.md
+      queries/               # sqlx query functions (one file per resource) — see queries/CLAUDE.md
   dev.sh                     # starts Postgres container + cargo run locally
 ```
 
@@ -60,6 +60,19 @@ Currently implemented:
 - `GET /api/v1/categories/:id`
 - `PATCH /api/v1/categories/:id` — 403 if `is_default`
 - `DELETE /api/v1/categories/:id` — 403 if `is_default`
+- `GET /api/v1/accounts` — list with computed balances
+- `POST /api/v1/accounts`
+- `GET /api/v1/accounts/:id` — includes computed balance
+- `PATCH /api/v1/accounts/:id`
+- `DELETE /api/v1/accounts/:id` — 409 if transactions exist
+- `GET /api/v1/transactions` — filterable, paginated (`account_id`, `category_id`, `transaction_type`, `date_from`, `date_to`, `sort_by`, `sort_order`, `page`, `page_size`)
+- `POST /api/v1/transactions` — supports INCOME, EXPENSE, TRANSFER
+- `GET /api/v1/transactions/:id`
+- `PATCH /api/v1/transactions/:id`
+- `DELETE /api/v1/transactions/:id`
+- `GET /api/v1/reports/account-balances`
+- `GET /api/v1/reports/spending-by-category?date_from=YYYY-MM-DD&date_to=YYYY-MM-DD`
+- `GET /api/v1/reports/monthly-summary?year=YYYY`
 
 ## Coding Standards
 
