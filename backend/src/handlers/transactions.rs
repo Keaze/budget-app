@@ -50,6 +50,25 @@ pub async fn create(
             VALID_TRANSACTION_TYPES.join(", ")
         )));
     }
+    if payload.transaction_type == "TRANSFER" {
+        match payload.transfer_to_account_id {
+            None => {
+                return Err(AppError::BadRequest(
+                    "transfer_to_account_id is required for TRANSFER transactions".into(),
+                ))
+            }
+            Some(dest) if dest == payload.account_id => {
+                return Err(AppError::BadRequest(
+                    "transfer_to_account_id must differ from account_id".into(),
+                ))
+            }
+            _ => {}
+        }
+    } else if payload.transfer_to_account_id.is_some() {
+        return Err(AppError::BadRequest(
+            "transfer_to_account_id must only be set for TRANSFER transactions".into(),
+        ));
+    }
     let tx = transactions::create(&db, payload).await?;
     Ok((StatusCode::CREATED, Json(tx)))
 }

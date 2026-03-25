@@ -22,8 +22,8 @@ pub async fn get_by_id(db: &PgPool, id: Uuid) -> Result<Transaction, AppError> {
 pub async fn create(db: &PgPool, req: CreateTransactionRequest) -> Result<Transaction, AppError> {
     sqlx::query_as::<_, Transaction>(
         "INSERT INTO transactions \
-           (account_id, category_id, transaction_type, amount, label, notes, date) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7) \
+           (account_id, category_id, transaction_type, amount, label, notes, date, transfer_to_account_id) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) \
          RETURNING id, account_id, category_id, transaction_type, amount, label, notes, date, \
                    transfer_to_account_id, created_at",
     )
@@ -34,6 +34,7 @@ pub async fn create(db: &PgPool, req: CreateTransactionRequest) -> Result<Transa
     .bind(&req.label)
     .bind(&req.notes)
     .bind(req.date)
+    .bind(req.transfer_to_account_id)
     .fetch_one(db)
     .await
     .map_err(|e| match e {

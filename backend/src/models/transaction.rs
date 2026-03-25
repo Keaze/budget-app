@@ -47,6 +47,7 @@ pub struct CreateTransactionRequest {
     pub label: String,
     pub notes: Option<String>,
     pub date: DateTime<Utc>,
+    pub transfer_to_account_id: Option<Uuid>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -76,6 +77,7 @@ mod tests {
         assert_eq!(req.label, "Salary");
         assert!(req.category_id.is_none());
         assert!(req.notes.is_none());
+        assert!(req.transfer_to_account_id.is_none());
     }
 
     #[test]

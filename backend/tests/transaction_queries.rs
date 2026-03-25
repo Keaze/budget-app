@@ -34,6 +34,24 @@ fn income_req(account_id: Uuid, amount: &str) -> CreateTransactionRequest {
         label: "Test income".into(),
         notes: None,
         date: Utc::now(),
+        transfer_to_account_id: None,
+    }
+}
+
+fn transfer_req(
+    from_account_id: Uuid,
+    to_account_id: Uuid,
+    amount: &str,
+) -> CreateTransactionRequest {
+    CreateTransactionRequest {
+        account_id: from_account_id,
+        category_id: None,
+        transaction_type: "TRANSFER".into(),
+        amount: BigDecimal::from_str(amount).unwrap(),
+        label: "Test transfer".into(),
+        notes: None,
+        date: Utc::now(),
+        transfer_to_account_id: Some(to_account_id),
     }
 }
 
@@ -83,6 +101,7 @@ async fn create_with_all_fields() {
             label: "Groceries".into(),
             notes: Some("Weekly shop".into()),
             date: Utc::now(),
+            transfer_to_account_id: None,
         },
     )
     .await
@@ -144,6 +163,7 @@ async fn update_partial_preserves_fields() {
             label: "Original label".into(),
             notes: None,
             date: Utc::now(),
+            transfer_to_account_id: None,
         },
     )
     .await
@@ -245,6 +265,7 @@ async fn balance_reflects_expense_transaction() {
             label: "Groceries".into(),
             notes: None,
             date: Utc::now(),
+            transfer_to_account_id: None,
         },
     )
     .await
@@ -325,6 +346,7 @@ async fn list_filters_by_transaction_type() {
             label: "Expense".into(),
             notes: None,
             date: Utc::now(),
+            transfer_to_account_id: None,
         },
     )
     .await
@@ -449,6 +471,7 @@ async fn balance_restored_after_delete() {
             label: "Groceries".into(),
             notes: None,
             date: Utc::now(),
+            transfer_to_account_id: None,
         },
     )
     .await
@@ -464,4 +487,88 @@ async fn balance_restored_after_delete() {
         with_balance.balance,
         BigDecimal::from_str("1000.00").unwrap()
     );
+}
+
+#[tokio::test]
+async fn transfer_updates_both_account_balances() {
+    let db = common::setup().await;
+    let account_a = create_checking(&db.pool, "Account A").await; // initial_balance = 1000
+    let account_b = accounts::create(
+        &db.pool,
+        CreateAccountRequest {
+            name: "Account B".into(),
+            account_type: "CHECKING".into(),
+            currency: None,
+            initial_balance: Some(BigDecimal::from_str("500.00").unwrap()),
+        },
+    )
+    .await
+    .unwrap();
+
+    transactions::create(&db.pool, transfer_req(account_a.id, account_b.id, "300.00"))
+        .await
+        .unwrap();
+
+    let balance_a = accounts::get_by_id_with_balance(&db.pool, account_a.id)
+        .await
+        .unwrap()
+        .balance;
+    let balance_b = accounts::get_by_id_with_balance(&db.pool, account_b.id)
+        .await
+        .unwrap()
+        .balance;
+
+    // A: 1000 - 300 = 700
+    assert_eq!(balance_a, BigDecimal::from_str("700.00").unwrap());
+    // B: 500 + 300 = 800
+    assert_eq!(balance_b, BigDecimal::from_str("800.00").unwrap());
+}
+
+#[tokio::test]
+async fn delete_transfer_restores_both_balances() {
+    let db = common::setup().await;
+    let account_a = create_checking(&db.pool, "Account A").await;
+    let account_b = accounts::create(
+        &db.pool,
+        CreateAccountRequest {
+            name: "Account B".into(),
+            account_type: "CHECKING".into(),
+            currency: None,
+            initial_balance: Some(BigDecimal::from_str("500.00").unwrap()),
+        },
+    )
+    .await
+    .unwrap();
+
+    let transfer = transactions::create(&db.pool, transfer_req(account_a.id, account_b.id, "300.00"))
+        .await
+        .unwrap();
+
+    transactions::delete(&db.pool, transfer.id).await.unwrap();
+
+    let balance_a = accounts::get_by_id_with_balance(&db.pool, account_a.id)
+        .await
+        .unwrap()
+        .balance;
+    let balance_b = accounts::get_by_id_with_balance(&db.pool, account_b.id)
+        .await
+        .unwrap()
+        .balance;
+
+    assert_eq!(balance_a, BigDecimal::from_str("1000.00").unwrap());
+    assert_eq!(balance_b, BigDecimal::from_str("500.00").unwrap());
+}
+
+#[tokio::test]
+async fn transfer_stores_transfer_to_account_id() {
+    let db = common::setup().await;
+    let account_a = create_checking(&db.pool, "Account A").await;
+    let account_b = create_checking(&db.pool, "Account B").await;
+
+    let transfer = transactions::create(&db.pool, transfer_req(account_a.id, account_b.id, "100.00"))
+        .await
+        .unwrap();
+
+    assert_eq!(transfer.transaction_type, "TRANSFER");
+    assert_eq!(transfer.transfer_to_account_id, Some(account_b.id));
 }
