@@ -150,6 +150,7 @@ describe('TransactionForm — submission', () => {
           account_id: 'acc-1',
           amount: 42.5,
           label: 'Weekly shop',
+          date: expect.stringMatching(/T00:00:00Z$/),
         })
       )
     )

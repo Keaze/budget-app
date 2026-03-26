@@ -55,7 +55,7 @@ export default function TransactionForm({ transaction, accounts, categories, onS
         amount: parseFloat(amount),
         label: label.trim(),
         ...(categoryId ? { category_id: categoryId } : {}),
-        date,
+        date: `${date}T00:00:00Z`,
         ...(notes.trim() ? { notes: notes.trim() } : {}),
         ...(type === 'TRANSFER' && transferToAccountId
           ? { transfer_to_account_id: transferToAccountId }
