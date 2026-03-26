@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { getCategories, createCategory, updateCategory, deleteCategory } from '../api/categories'
 import CategoryForm from '../components/CategoryForm'
+import ErrorToast from '../components/ErrorToast'
 import { logger } from '../utils/logger'
 
 export default function CategoriesPage() {
@@ -46,7 +47,11 @@ export default function CategoriesPage() {
       setCategories(cats => cats.filter(c => c.id !== id))
     } catch (err) {
       logger.error('Failed to delete category', err)
-      setError(err.response?.data?.error ?? 'Failed to delete category.')
+      if (err.response?.status === 403) {
+        setError('Default categories cannot be modified.')
+      } else {
+        setError(err.response?.data?.error ?? 'Failed to delete category.')
+      }
     } finally {
       setDeleteId(null)
     }
@@ -79,11 +84,7 @@ export default function CategoriesPage() {
         </button>
       </div>
 
-      {error && (
-        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
-          {error}
-        </div>
-      )}
+      <ErrorToast message={error} onDismiss={() => setError(null)} />
 
       <ul className="space-y-2">
         {categories.map(cat => (

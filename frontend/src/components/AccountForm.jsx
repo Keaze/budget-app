@@ -35,7 +35,7 @@ export default function AccountForm({ account, onSave, onClose }) {
         initial_balance: parseFloat(initialBalance) || 0,
       })
     } catch (err) {
-      setApiError(err.message)
+      setApiError(err.response?.data?.error ?? err.message)
     } finally {
       setSaving(false)
     }

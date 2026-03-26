@@ -25,7 +25,7 @@ export default function CategoryForm({ category, onSave, onClose }) {
         ...(color ? { color } : {}),
       })
     } catch (err) {
-      setApiError(err.message)
+      setApiError(err.response?.data?.error ?? err.message)
     } finally {
       setSaving(false)
     }

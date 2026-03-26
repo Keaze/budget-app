@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { getAccounts, createAccount, updateAccount, deleteAccount } from '../api/accounts'
 import AccountCard from '../components/AccountCard'
 import AccountForm from '../components/AccountForm'
+import ErrorToast from '../components/ErrorToast'
 import { logger } from '../utils/logger'
 
 export default function AccountsPage() {
@@ -83,11 +84,7 @@ export default function AccountsPage() {
         </button>
       </div>
 
-      {error && (
-        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
-          {error}
-        </div>
-      )}
+      <ErrorToast message={error} onDismiss={() => setError(null)} />
 
       <ul className="space-y-2">
         {accounts.map(account => (

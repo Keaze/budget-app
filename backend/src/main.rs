@@ -4,8 +4,15 @@ mod handlers;
 mod models;
 mod queries;
 
-use axum::{routing::{get, post}, Router};
+use axum::{http::StatusCode, response::IntoResponse, routing::{get, post}, Json, Router};
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
+
+async fn not_found_handler() -> impl IntoResponse {
+    (
+        StatusCode::NOT_FOUND,
+        Json(serde_json::json!({ "error": "not found" })),
+    )
+}
 
 #[tokio::main]
 async fn main() {
@@ -103,6 +110,7 @@ fn build_router(pool: db::Db) -> Router {
     Router::new()
         .route("/health", get(|| async { "OK" }))
         .nest("/api/v1", api)
+        .fallback(not_found_handler)
         .layer(TraceLayer::new_for_http())
         .layer(CorsLayer::permissive())
         .with_state(pool)
@@ -120,7 +128,9 @@ mod tests {
 
     fn health_router() -> Router {
         // Health handler is stateless — build a minimal router without a pool.
-        Router::new().route("/health", get(|| async { "OK" }))
+        Router::new()
+            .route("/health", get(|| async { "OK" }))
+            .fallback(super::not_found_handler)
     }
 
     #[tokio::test]
@@ -138,7 +148,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn unknown_route_returns_404() {
+    async fn unknown_route_returns_404_json() {
         let app = health_router();
         let resp: axum::response::Response = app
             .oneshot(
@@ -151,5 +161,8 @@ mod tests {
             .unwrap();
 
         assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+        let bytes = to_bytes(resp.into_body(), usize::MAX).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(body["error"], "not found");
     }
 }
