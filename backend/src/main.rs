@@ -4,7 +4,7 @@ mod handlers;
 mod models;
 mod queries;
 
-use axum::{routing::get, Router};
+use axum::{routing::{get, post}, Router};
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 
 #[tokio::main]
@@ -94,6 +94,10 @@ fn build_router(pool: db::Db) -> Router {
         .route(
             "/reports/monthly-summary",
             get(handlers::reports::monthly_summary),
+        )
+        .route(
+            "/client-errors",
+            post(handlers::client_errors::report),
         );
 
     Router::new()
