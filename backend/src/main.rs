@@ -58,7 +58,7 @@ fn build_router(pool: db::Db) -> Router {
             get(handlers::accounts::list).post(handlers::accounts::create),
         )
         .route(
-            "/accounts/:id",
+            "/accounts/{id}",
             get(handlers::accounts::get_one)
                 .patch(handlers::accounts::update)
                 .delete(handlers::accounts::delete),
@@ -68,7 +68,7 @@ fn build_router(pool: db::Db) -> Router {
             get(handlers::categories::list).post(handlers::categories::create),
         )
         .route(
-            "/categories/:id",
+            "/categories/{id}",
             get(handlers::categories::get_one)
                 .patch(handlers::categories::update)
                 .delete(handlers::categories::delete),
@@ -78,7 +78,7 @@ fn build_router(pool: db::Db) -> Router {
             get(handlers::transactions::list).post(handlers::transactions::create),
         )
         .route(
-            "/transactions/:id",
+            "/transactions/{id}",
             get(handlers::transactions::get_one)
                 .patch(handlers::transactions::update)
                 .delete(handlers::transactions::delete),
