@@ -9,16 +9,22 @@ services:
       - db_data:/var/lib/postgresql/data
     networks:
       - budget_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U budget -d budget"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   backend:
     build: ./backend
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      BIND_ADDR: ${BIND_ADDR}
-      RUST_LOG: ${RUST_LOG}
-      CORS_ORIGIN: ${CORS_ORIGIN}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://budget:secret@db:5432/budget}
+      BIND_ADDR: ${BIND_ADDR:-0.0.0.0:3001}
+      RUST_LOG: ${RUST_LOG:-info}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - budget_net
 
