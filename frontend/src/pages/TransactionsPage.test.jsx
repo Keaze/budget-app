@@ -232,4 +232,12 @@ describe('TransactionsPage — add button', () => {
     const addLink = links.find(l => l.getAttribute('href') === '/transactions/new')
     expect(addLink).toBeInTheDocument()
   })
+
+  it('renders mobile FAB linking to /transactions/new', async () => {
+    getTransactions.mockResolvedValue(mockTxResponse([]))
+    renderPage()
+    await screen.findByRole('heading', { name: 'Transactions' })
+    const fab = screen.getByRole('link', { name: /add transaction/i })
+    expect(fab).toHaveAttribute('href', '/transactions/new')
+  })
 })

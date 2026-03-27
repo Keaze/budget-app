@@ -43,6 +43,12 @@ describe('CategoriesPage — loading and display', () => {
     expect(await screen.findByText('Failed to load categories.')).toBeInTheDocument()
   })
 
+  it('shows empty state when no categories', async () => {
+    getCategories.mockResolvedValue({ data: [] })
+    renderPage()
+    expect(await screen.findByText(/no categories yet/i)).toBeInTheDocument()
+  })
+
   it('shows Default badge for default categories', async () => {
     getCategories.mockResolvedValue({ data: [defaultCategory] })
     renderPage()

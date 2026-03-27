@@ -48,6 +48,14 @@ describe('AccountsPage — loading and display', () => {
     expect(await screen.findByText('Failed to load accounts.')).toBeInTheDocument()
   })
 
+  it('shows empty state when no accounts', async () => {
+    getAccounts.mockResolvedValue({ data: [] })
+    renderPage()
+    expect(
+      await screen.findByText(/no accounts yet/i)
+    ).toBeInTheDocument()
+  })
+
   it('shows account balance', async () => {
     getAccounts.mockResolvedValue({ data: [account1] })
     renderPage()

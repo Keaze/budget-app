@@ -86,6 +86,12 @@ export default function AccountsPage() {
 
       <ErrorToast message={error} onDismiss={() => setError(null)} />
 
+      {accounts.length === 0 && (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          No accounts yet. Create your first account to get started.
+        </p>
+      )}
+
       <ul className="space-y-2">
         {accounts.map(account => (
           <li key={account.id} className="flex items-center gap-2">

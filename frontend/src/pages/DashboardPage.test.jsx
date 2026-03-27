@@ -218,3 +218,12 @@ describe('DashboardPage — spending chart', () => {
     )
   })
 })
+
+describe('DashboardPage — mobile FAB', () => {
+  it('renders mobile FAB linking to /transactions/new', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    const fab = screen.getByRole('link', { name: /add transaction/i })
+    expect(fab).toHaveAttribute('href', '/transactions/new')
+  })
+})

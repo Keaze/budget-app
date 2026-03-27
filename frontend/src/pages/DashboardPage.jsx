@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Plus } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { getAccountBalances, getSpendingByCategory } from '../api/reports'
 import { getTransactions } from '../api/transactions'
@@ -160,6 +161,15 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Mobile FAB */}
+      <Link
+        to="/transactions/new"
+        className="fixed bottom-20 right-4 z-40 md:hidden flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700"
+        aria-label="Add transaction"
+      >
+        <Plus size={24} />
+      </Link>
     </div>
   )
 }

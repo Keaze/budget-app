@@ -7,6 +7,7 @@ import { getTransactions, deleteTransaction } from '../api/transactions'
 import FilterBar from '../components/FilterBar'
 import TransactionRow from '../components/TransactionRow'
 import TransactionCard from '../components/TransactionCard'
+import ErrorToast from '../components/ErrorToast'
 import { logger } from '../utils/logger'
 
 export default function TransactionsPage() {
@@ -87,11 +88,7 @@ export default function TransactionsPage() {
 
       <FilterBar accounts={accounts} categories={categories} />
 
-      {error && (
-        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
-          {error}
-        </div>
-      )}
+      <ErrorToast message={error} onDismiss={() => setError('')} />
 
       {loading ? (
         <div className="py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
@@ -175,6 +172,15 @@ export default function TransactionsPage() {
           </div>
         </>
       )}
+
+      {/* Mobile FAB */}
+      <Link
+        to="/transactions/new"
+        className="fixed bottom-20 right-4 z-40 md:hidden flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700"
+        aria-label="Add transaction"
+      >
+        <Plus size={24} />
+      </Link>
     </div>
   )
 }
