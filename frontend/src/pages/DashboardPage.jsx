@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Plus } from 'lucide-react'
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { getAccountBalances, getSpendingByCategory } from '../api/reports'
 import { getTransactions } from '../api/transactions'
 import { getCategories } from '../api/categories'
@@ -20,30 +19,32 @@ function currentMonthRange() {
   }
 }
 
-function SpendingChart({ spending, onCategoryClick }) {
+function SpendingBars({ spending, onCategoryClick }) {
   if (spending.length === 0) return (
     <p className="text-sm text-stone-400">No expenses this month.</p>
   )
+  const max = Math.max(...spending.map(s => s.total))
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <PieChart>
-        <Pie
-          data={spending}
-          dataKey="total"
-          nameKey="category_name"
-          cx="50%"
-          cy="50%"
-          outerRadius={80}
-          onClick={(entry) => onCategoryClick(entry.category_id)}
+    <div className="flex flex-col gap-3">
+      {spending.slice(0, 5).map(item => (
+        <button
+          key={item.category_id}
+          onClick={() => onCategoryClick(item.category_id)}
+          className="w-full text-left group"
         >
-          {spending.map(entry => (
-            <Cell key={entry.category_id} fill={entry.color || '#22c55e'} />
-          ))}
-        </Pie>
-        <Tooltip formatter={(value) => `$${parseFloat(value).toFixed(2)}`} />
-        <Legend />
-      </PieChart>
-    </ResponsiveContainer>
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-[13px] text-stone-700 group-hover:text-stone-900">{item.category_name}</span>
+            <span className="text-[13px] font-bold tabular-nums text-red-600">${parseFloat(item.total).toFixed(2)}</span>
+          </div>
+          <div className="h-1.5 bg-red-50 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-red-500 rounded-full"
+              style={{ width: `${(item.total / max) * 100}%` }}
+            />
+          </div>
+        </button>
+      ))}
+    </div>
   )
 }
 
@@ -89,7 +90,6 @@ export default function DashboardPage() {
 
   const { date_from, date_to, label: monthLabel } = currentMonthRange()
   const totalBalance = accounts.reduce((sum, a) => sum + parseFloat(a.balance), 0)
-  const monthIncome = spending.filter ? 0 : 0  // income comes from transactions
   const txThisMonth = transactions.filter(tx => tx.transaction_type !== 'TRANSFER')
   const incomeTotal = txThisMonth
     .filter(tx => tx.transaction_type === 'INCOME')
@@ -200,7 +200,7 @@ export default function DashboardPage() {
             <h2 className="text-[15px] font-semibold text-stone-900 mb-4">
               Top Spending · {monthLabel}
             </h2>
-            <SpendingChart
+            <SpendingBars
               spending={spending}
               onCategoryClick={categoryId =>
                 navigate(`/transactions?category_id=${categoryId}&date_from=${date_from}&date_to=${date_to}`)

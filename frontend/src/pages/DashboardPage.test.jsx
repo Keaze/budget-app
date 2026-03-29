@@ -4,28 +4,6 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import DashboardPage from './DashboardPage'
 
-// Mock Recharts to avoid SVG/ResizeObserver issues in jsdom
-vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }) => <div>{children}</div>,
-  PieChart: ({ children }) => <div data-testid="pie-chart">{children}</div>,
-  Pie: ({ data, onClick }) => (
-    <div>
-      {(data ?? []).map(entry => (
-        <button
-          key={entry.category_id}
-          data-testid={`segment-${entry.category_id}`}
-          onClick={() => onClick?.(entry, 0, {})}
-        >
-          {entry.category_name}
-        </button>
-      ))}
-    </div>
-  ),
-  Cell: () => null,
-  Tooltip: () => null,
-  Legend: () => null,
-}))
-
 vi.mock('../api/reports', () => ({
   getAccountBalances: vi.fn(),
   getSpendingByCategory: vi.fn(),
@@ -176,18 +154,14 @@ describe('DashboardPage — recent transactions', () => {
   })
 })
 
-describe('DashboardPage — spending chart', () => {
-  it('renders the pie chart when spending data exists', async () => {
+describe('DashboardPage — spending bars', () => {
+  it('renders spending category names as buttons', async () => {
     renderPage()
     await screen.findByRole('heading', { name: 'Dashboard' })
-    expect(screen.getByTestId('pie-chart')).toBeInTheDocument()
-  })
-
-  it('renders pie segments with category names', async () => {
-    renderPage()
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    expect(screen.getByTestId('segment-cat-1')).toBeInTheDocument()
-    expect(screen.getByTestId('segment-cat-2')).toBeInTheDocument()
+    const buttons = screen.getAllByRole('button', { name: /Groceries/i })
+    expect(buttons.length).toBeGreaterThan(0)
+    const transportButtons = screen.getAllByRole('button', { name: /Transport/i })
+    expect(transportButtons.length).toBeGreaterThan(0)
   })
 
   it('shows empty state when no spending this month', async () => {
@@ -208,11 +182,12 @@ describe('DashboardPage — spending chart', () => {
     )
   })
 
-  it('navigates to filtered transactions when segment clicked', async () => {
+  it('navigates to filtered transactions when spending bar clicked', async () => {
     const user = userEvent.setup()
     renderPage()
     await screen.findByRole('heading', { name: 'Dashboard' })
-    await user.click(screen.getByTestId('segment-cat-1'))
+    const groceriesButton = screen.getAllByRole('button', { name: /Groceries/i })[0]
+    await user.click(groceriesButton)
     await waitFor(() =>
       expect(screen.getByText('Transactions Page')).toBeInTheDocument()
     )
