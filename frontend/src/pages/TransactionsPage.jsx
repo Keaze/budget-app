@@ -74,16 +74,9 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="p-4 max-w-5xl">
+    <div className="p-4 md:p-6 max-w-5xl">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Transactions</h1>
-        <Link
-          to="/transactions/new"
-          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
-        >
-          <Plus size={16} />
-          Add
-        </Link>
+        <h1 className="text-2xl font-bold tracking-tight text-stone-900">Transactions</h1>
       </div>
 
       <FilterPanel accounts={accounts} categories={categories} />
@@ -91,13 +84,13 @@ export default function TransactionsPage() {
       <ErrorToast message={error} onDismiss={() => setError('')} />
 
       {loading ? (
-        <div className="py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+        <div className="py-8 text-center text-stone-500 text-sm">
           Loading transactions…
         </div>
       ) : txData.data.length === 0 ? (
-        <div className="py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+        <div className="py-8 text-center text-stone-500 text-sm">
           No transactions found. Try adjusting your filters or{' '}
-          <Link to="/transactions/new" className="text-blue-600 hover:underline">
+          <Link to="/transactions/new" className="text-green-600 hover:underline">
             add a new transaction
           </Link>
           .
@@ -106,14 +99,14 @@ export default function TransactionsPage() {
         <>
           {/* Desktop table */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="w-full text-sm bg-white rounded-xl border border-stone-200 overflow-hidden">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                  <th className="py-2 px-4">Date</th>
-                  <th className="py-2 px-4">Label</th>
-                  <th className="py-2 px-4">Category</th>
-                  <th className="py-2 px-4">Account</th>
-                  <th className="py-2 px-4 text-right">Amount</th>
+                <tr className="border-b border-stone-200 bg-stone-50 text-left">
+                  <th className="py-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-stone-500">Date</th>
+                  <th className="py-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-stone-500">Description</th>
+                  <th className="py-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-stone-500">Category</th>
+                  <th className="py-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-stone-500">Account</th>
+                  <th className="py-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-stone-500 text-right">Amount</th>
                   <th className="py-2 px-4" />
                 </tr>
               </thead>
@@ -155,17 +148,17 @@ export default function TransactionsPage() {
             <button
               onClick={() => setPage(page - 1)}
               disabled={page <= 1}
-              className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 border border-stone-200 rounded-md text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:text-stone-400"
             >
               Previous
             </button>
-            <span className="text-gray-600 dark:text-gray-400">
+            <span className="text-stone-600">
               Page {page} of {totalPages}
             </span>
             <button
               onClick={() => setPage(page + 1)}
               disabled={page >= totalPages}
-              className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 border border-stone-200 rounded-md text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:text-stone-400"
             >
               Next
             </button>
@@ -176,7 +169,7 @@ export default function TransactionsPage() {
       {/* Mobile FAB */}
       <Link
         to="/transactions/new"
-        className="fixed bottom-20 right-4 z-40 md:hidden flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700"
+        className="fixed bottom-20 right-4 z-40 md:hidden flex items-center justify-center w-14 h-14 bg-green-600 text-white rounded-full shadow-lg hover:bg-green-700"
         aria-label="Add transaction"
       >
         <Plus size={24} />
