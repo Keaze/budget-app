@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route, useSearchParams } from 'react-router-dom'
-import FilterBar from './FilterBar'
+import FilterPanel from './FilterPanel'
 
 const accounts = [
   { id: 'acc-1', name: 'Checking' },
@@ -29,7 +29,7 @@ function renderBar(initialUrl = '/transactions') {
           path="/transactions"
           element={
             <>
-              <FilterBar accounts={accounts} categories={categories} />
+              <FilterPanel accounts={accounts} categories={categories} />
               <ParamsSpy onParams={onParams} />
             </>
           }
@@ -40,7 +40,7 @@ function renderBar(initialUrl = '/transactions') {
   return { onParams }
 }
 
-describe('FilterBar — rendering', () => {
+describe('FilterPanel — rendering', () => {
   it('renders date from and to inputs', () => {
     renderBar()
     expect(screen.getByLabelText('Date from')).toBeInTheDocument()
@@ -75,7 +75,7 @@ describe('FilterBar — rendering', () => {
   })
 
   it('renders Clear filters button', () => {
-    renderBar()
+    renderBar('/transactions?account_id=acc-1')
     expect(screen.getByRole('button', { name: /clear filters/i })).toBeInTheDocument()
   })
 
@@ -100,7 +100,7 @@ describe('FilterBar — rendering', () => {
   })
 })
 
-describe('FilterBar — filter changes update URL', () => {
+describe('FilterPanel — filter changes update URL', () => {
   it('sets account_id param when account selected', async () => {
     const user = userEvent.setup()
     const { onParams } = renderBar()
@@ -142,12 +142,35 @@ describe('FilterBar — filter changes update URL', () => {
   })
 })
 
-describe('FilterBar — clear filters', () => {
+describe('FilterPanel — clear filters', () => {
   it('clears all params when Clear filters clicked', async () => {
     const user = userEvent.setup()
     const { onParams } = renderBar('/transactions?account_id=acc-1&transaction_type=EXPENSE&page=2')
     await user.click(screen.getByRole('button', { name: /clear filters/i }))
     const lastCall = onParams.mock.calls[onParams.mock.calls.length - 1][0]
     expect(lastCall).toEqual({})
+  })
+})
+
+describe('FilterPanel — collapsible toggle', () => {
+  it('renders the Filters toggle button', () => {
+    renderBar()
+    expect(screen.getByRole('button', { name: /filters/i })).toBeInTheDocument()
+  })
+
+  it('hides filter controls after clicking the toggle to close', async () => {
+    const user = userEvent.setup()
+    renderBar()
+    // panel starts open — close it
+    await user.click(screen.getByRole('button', { name: /filters/i }))
+    expect(screen.queryByLabelText('Date from')).not.toBeInTheDocument()
+  })
+
+  it('reveals filter controls after clicking toggle again to re-open', async () => {
+    const user = userEvent.setup()
+    renderBar()
+    await user.click(screen.getByRole('button', { name: /filters/i }))  // close
+    await user.click(screen.getByRole('button', { name: /filters/i }))  // reopen
+    expect(screen.getByLabelText('Date from')).toBeInTheDocument()
   })
 })
