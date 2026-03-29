@@ -4,7 +4,7 @@ import { Plus } from 'lucide-react'
 import { getAccounts } from '../api/accounts'
 import { getCategories } from '../api/categories'
 import { getTransactions, deleteTransaction } from '../api/transactions'
-import FilterBar from '../components/FilterBar'
+import FilterPanel from '../components/FilterPanel'
 import TransactionRow from '../components/TransactionRow'
 import TransactionCard from '../components/TransactionCard'
 import ErrorToast from '../components/ErrorToast'
@@ -86,7 +86,7 @@ export default function TransactionsPage() {
         </Link>
       </div>
 
-      <FilterBar accounts={accounts} categories={categories} />
+      <FilterPanel accounts={accounts} categories={categories} />
 
       <ErrorToast message={error} onDismiss={() => setError('')} />
 
