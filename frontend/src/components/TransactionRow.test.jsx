@@ -145,3 +145,44 @@ describe('TransactionRow — delete flow', () => {
     expect(onDeleteCancel).toHaveBeenCalled()
   })
 })
+
+describe('TransactionRow — notes', () => {
+  it('renders notes when present', () => {
+    const tx = { ...expenseTx, notes: 'Electricity spike' }
+    render(
+      <MemoryRouter>
+        <table><tbody>
+          <TransactionRow
+            transaction={tx}
+            account={account}
+            category={category}
+            deleting={false}
+            onDelete={vi.fn()}
+            onDeleteConfirm={vi.fn()}
+            onDeleteCancel={vi.fn()}
+          />
+        </tbody></table>
+      </MemoryRouter>
+    )
+    expect(screen.getByText('Electricity spike')).toBeInTheDocument()
+  })
+
+  it('does not render a notes element when notes is absent', () => {
+    render(
+      <MemoryRouter>
+        <table><tbody>
+          <TransactionRow
+            transaction={expenseTx}
+            account={account}
+            category={category}
+            deleting={false}
+            onDelete={vi.fn()}
+            onDeleteConfirm={vi.fn()}
+            onDeleteCancel={vi.fn()}
+          />
+        </tbody></table>
+      </MemoryRouter>
+    )
+    expect(screen.queryByTestId('tx-notes')).not.toBeInTheDocument()
+  })
+})
