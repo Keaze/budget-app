@@ -1,13 +1,11 @@
-import { NavLink } from 'react-router-dom'
-import { useState } from 'react'
+import { NavLink, Link } from 'react-router-dom'
 import {
   LayoutDashboard,
   ArrowLeftRight,
   BarChart2,
   Wallet,
   Tag,
-  ChevronLeft,
-  ChevronRight,
+  Plus,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -18,75 +16,65 @@ const NAV_ITEMS = [
   { to: '/categories',   label: 'Categories',   icon: Tag             },
 ]
 
-const activeClass = 'text-blue-600 dark:text-blue-400'
-const inactiveClass = 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
+function desktopNavClass({ isActive }) {
+  return isActive
+    ? 'bg-green-50 text-green-600 font-semibold rounded-md px-3 py-1.5 text-sm transition-colors'
+    : 'text-stone-500 hover:text-stone-900 px-3 py-1.5 text-sm transition-colors rounded-md'
+}
 
-function navLinkClass({ isActive }) {
-  return isActive ? activeClass : inactiveClass
+function mobileNavClass({ isActive }) {
+  return isActive
+    ? 'flex flex-col items-center justify-center flex-1 py-2 text-xs font-semibold text-green-600 transition-colors'
+    : 'flex flex-col items-center justify-center flex-1 py-2 text-xs font-medium text-stone-400 transition-colors'
 }
 
 export default function Layout({ children }) {
-  const [collapsed, setCollapsed] = useState(false)
-
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
-      {/* Desktop sidebar */}
-      <aside
-        className={`hidden md:flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-200 ${collapsed ? 'w-16' : 'w-56'}`}
-      >
-        <div className="flex items-center justify-between px-3 py-4 border-b border-gray-200 dark:border-gray-700">
-          {!collapsed && (
-            <span className="font-semibold text-gray-800 dark:text-gray-100 truncate">Budget App</span>
-          )}
-          <button
-            onClick={() => setCollapsed(c => !c)}
-            className="ml-auto p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </button>
-        </div>
+    <div className="flex flex-col min-h-screen bg-green-50">
+      {/* Top header */}
+      <header className="bg-white border-b border-stone-200 h-14 flex items-center px-4 md:px-6 shrink-0">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2 mr-6">
+          <div className="w-7 h-7 bg-green-600 rounded-lg flex items-center justify-center shrink-0">
+            <span className="text-white text-sm font-bold">B</span>
+          </div>
+          <span className="font-bold text-stone-900 text-[15px]">Budget</span>
+        </Link>
 
-        <nav className="flex flex-col gap-1 p-2 flex-1">
-          {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${navLinkClass({ isActive })}`
-              }
-            >
-              <Icon size={20} className="shrink-0" />
-              {!collapsed && <span>{label}</span>}
+        {/* Desktop nav links */}
+        <nav className="hidden md:flex items-center gap-1 flex-1">
+          {NAV_ITEMS.map(({ to, label }) => (
+            <NavLink key={to} to={to} end={to === '/'} className={desktopNavClass}>
+              {label}
             </NavLink>
           ))}
         </nav>
-      </aside>
 
-      {/* Main content */}
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
-          {children}
-        </main>
+        {/* Add Transaction button — desktop only */}
+        <Link
+          to="/transactions/new"
+          aria-label="Add transaction"
+          className="hidden md:flex items-center gap-1.5 ml-auto bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+        >
+          <Plus size={15} />
+          Add Transaction
+        </Link>
+      </header>
 
-        {/* Mobile bottom tab bar */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex">
-          {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              className={({ isActive }) =>
-                `flex flex-col items-center justify-center flex-1 py-2 text-xs font-medium transition-colors ${navLinkClass({ isActive })}`
-              }
-            >
-              <Icon size={22} />
-              <span className="mt-1">{label}</span>
-            </NavLink>
-          ))}
-        </nav>
-      </div>
+      {/* Page content */}
+      <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
+        {children}
+      </main>
+
+      {/* Mobile bottom tab bar */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 flex z-30">
+        {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+          <NavLink key={to} to={to} end={to === '/'} className={mobileNavClass}>
+            <Icon size={22} />
+            <span className="mt-0.5">{label}</span>
+          </NavLink>
+        ))}
+      </nav>
     </div>
   )
 }
