@@ -6,6 +6,12 @@ const TYPE_LABELS = {
   CREDIT_CARD: 'Credit Card',
 }
 
+const TYPE_BADGE = {
+  CHECKING: 'bg-green-100 text-green-700',
+  SAVINGS: 'bg-green-100 text-green-700',
+  CREDIT_CARD: 'bg-red-50 text-red-600',
+}
+
 export default function AccountCard({ account }) {
   const navigate = useNavigate()
   const balance = parseFloat(account.balance)
@@ -14,18 +20,21 @@ export default function AccountCard({ account }) {
   return (
     <button
       onClick={() => navigate(`/transactions?account_id=${account.id}`)}
-      className="w-full text-left px-4 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md hover:border-blue-400 dark:hover:border-blue-500 transition-colors"
+      className="w-full text-left p-5 bg-white border border-stone-200 rounded-xl hover:border-green-400 transition-colors"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="font-medium text-gray-900 dark:text-gray-100">{account.name}</p>
-          <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full">
+          <p className="font-semibold text-stone-900 text-[15px]">{account.name}</p>
+          <span className={`inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full mt-1.5 ${TYPE_BADGE[account.account_type] ?? 'bg-stone-100 text-stone-500'}`}>
             {TYPE_LABELS[account.account_type] ?? account.account_type}
           </span>
         </div>
-        <p className={`text-lg font-semibold tabular-nums ${isNegative ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-          {account.currency} {balance.toFixed(2)}
-        </p>
+        <div className="text-right">
+          <p className={`text-2xl font-bold tabular-nums tracking-tight ${isNegative ? 'text-red-600' : 'text-green-600'}`}>
+            {account.currency} {balance.toFixed(2)}
+          </p>
+          <p className="text-xs text-stone-400 mt-1">Click to view transactions</p>
+        </div>
       </div>
     </button>
   )
