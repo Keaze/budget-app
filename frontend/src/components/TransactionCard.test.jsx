@@ -142,3 +142,40 @@ describe('TransactionCard — delete flow', () => {
     expect(onDeleteCancel).toHaveBeenCalled()
   })
 })
+
+describe('TransactionCard — notes', () => {
+  it('renders notes when present', () => {
+    const tx = { ...expenseTx, notes: 'Weekly bulk shop' }
+    render(
+      <MemoryRouter>
+        <TransactionCard
+          transaction={tx}
+          account={account}
+          category={category}
+          deleting={false}
+          onDelete={vi.fn()}
+          onDeleteConfirm={vi.fn()}
+          onDeleteCancel={vi.fn()}
+        />
+      </MemoryRouter>
+    )
+    expect(screen.getByText('Weekly bulk shop')).toBeInTheDocument()
+  })
+
+  it('does not render a notes element when notes is absent', () => {
+    render(
+      <MemoryRouter>
+        <TransactionCard
+          transaction={expenseTx}
+          account={account}
+          category={category}
+          deleting={false}
+          onDelete={vi.fn()}
+          onDeleteConfirm={vi.fn()}
+          onDeleteCancel={vi.fn()}
+        />
+      </MemoryRouter>
+    )
+    expect(screen.queryByTestId('tx-notes')).not.toBeInTheDocument()
+  })
+})
