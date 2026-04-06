@@ -1,0 +1,6 @@
+# Local development overrides — merged automatically by `docker-compose up`.
+# Not used by Coolify (which only reads docker-compose.yml).
+services:
+  frontend:
+    ports:
+      - "80:80"

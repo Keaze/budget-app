@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: budget
-      POSTGRES_PASSWORD: secret
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
       POSTGRES_DB: budget
     volumes:
       - db_data:/var/lib/postgresql/data
@@ -30,8 +30,6 @@ services:
 
   frontend:
     build: ./frontend
-    ports:
-      - "80:80"
     depends_on:
       - backend
     networks:
