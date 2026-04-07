@@ -21,7 +21,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql://budget:secret@db:5432/budget}
       BIND_ADDR: ${BIND_ADDR:-0.0.0.0:3001}
       RUST_LOG: ${RUST_LOG:-info}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:4287}
     depends_on:
       db:
         condition: service_healthy
@@ -30,6 +30,8 @@ services:
 
   frontend:
     build: ./frontend
+    ports:
+      - "4287:80"
     depends_on:
       - backend
     networks:
