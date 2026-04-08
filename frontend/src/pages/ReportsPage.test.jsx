@@ -238,3 +238,36 @@ describe('ReportsPage — account balances', () => {
     expect(await screen.findByText('Failed to load account balances.')).toBeInTheDocument()
   })
 })
+
+describe('ReportsPage — tab navigation', () => {
+  it('renders tab buttons for all three sections', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Reports' })
+    expect(screen.getByRole('button', { name: /spending by category/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /monthly summary/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /account balances/i })).toBeInTheDocument()
+  })
+
+  it('spending section is visible by default', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Reports' })
+    const spendingSection = screen.getByTestId('tab-spending')
+    expect(spendingSection).not.toHaveClass('hidden')
+  })
+
+  it('monthly section is hidden by default', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Reports' })
+    const monthlySection = screen.getByTestId('tab-monthly')
+    expect(monthlySection).toHaveClass('hidden')
+  })
+
+  it('clicking Monthly Summary tab shows monthly section', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'Reports' })
+    await user.click(screen.getByRole('button', { name: /monthly summary/i }))
+    expect(screen.getByTestId('tab-monthly')).not.toHaveClass('hidden')
+    expect(screen.getByTestId('tab-spending')).toHaveClass('hidden')
+  })
+})
