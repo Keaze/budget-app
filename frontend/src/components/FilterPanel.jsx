@@ -15,7 +15,6 @@ const inputClass =
 const labelClass = 'block text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-1'
 
 export default function FilterPanel({ accounts, categories }) {
-  const [open, setOpen] = useState(true)
   const [searchParams, setSearchParams] = useSearchParams()
 
   const dateFrom   = searchParams.get('date_from') ?? ''
@@ -25,6 +24,7 @@ export default function FilterPanel({ accounts, categories }) {
   const txType     = searchParams.get('transaction_type') ?? ''
 
   const activeCount = [dateFrom, dateTo, accountId, categoryId, txType].filter(Boolean).length
+  const [open, setOpen] = useState(activeCount > 0)
 
   function updateParam(key, value) {
     const next = new URLSearchParams(searchParams)
