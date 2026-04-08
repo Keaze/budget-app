@@ -82,6 +82,8 @@ export default function ReportsPage() {
       .finally(() => setLoadingAccounts(false))
   }, [])
 
+  const displayCurrency = accounts[0]?.currency ?? '$'
+
   const tabs = [
     { id: 'spending',  label: 'Spending by Category' },
     { id: 'monthly',   label: 'Monthly Summary'      },
@@ -141,7 +143,7 @@ export default function ReportsPage() {
                       <div key={item.category_id}>
                         <div className="flex justify-between mb-1">
                           <span className="text-[13px] text-stone-700 font-medium">{item.category_name}</span>
-                          <span className="text-[13px] font-bold text-red-600 tabular-nums">${parseFloat(item.total).toFixed(2)}</span>
+                          <span className="text-[13px] font-bold text-red-600 tabular-nums">{displayCurrency}{parseFloat(item.total).toFixed(2)}</span>
                         </div>
                         <div className="h-2 bg-red-50 rounded-full overflow-hidden">
                           <div
@@ -178,7 +180,7 @@ export default function ReportsPage() {
                         <Cell key={entry.category_id} fill={SPENDING_COLORS[i % SPENDING_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value, name) => [`$${parseFloat(value).toFixed(2)}`, name]} />
+                    <Tooltip formatter={(value, name) => [`${displayCurrency}${parseFloat(value).toFixed(2)}`, name]} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -206,7 +208,7 @@ export default function ReportsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
                 <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#78716c' }} />
                 <YAxis tick={{ fontSize: 12, fill: '#78716c' }} />
-                <Tooltip formatter={v => `$${parseFloat(v).toFixed(2)}`} />
+                <Tooltip formatter={v => `${displayCurrency}${parseFloat(v).toFixed(2)}`} />
                 <Legend />
                 <Bar dataKey="income" name="Income" fill="#16a34a" />
                 <Bar dataKey="expenses" name="Expenses" fill="#dc2626" />

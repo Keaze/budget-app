@@ -41,35 +41,47 @@ function renderBar(initialUrl = '/transactions') {
 }
 
 describe('FilterPanel — rendering', () => {
-  it('renders date from and to inputs', () => {
+  it('renders date from and to inputs', async () => {
+    const user = userEvent.setup()
     renderBar()
+    await user.click(screen.getByRole('button', { name: /filters/i }))
     expect(screen.getByLabelText('Date from')).toBeInTheDocument()
     expect(screen.getByLabelText('Date to')).toBeInTheDocument()
   })
 
-  it('renders account filter select', () => {
+  it('renders account filter select', async () => {
+    const user = userEvent.setup()
     renderBar()
+    await user.click(screen.getByRole('button', { name: /filters/i }))
     expect(screen.getByLabelText('Account filter')).toBeInTheDocument()
   })
 
-  it('renders category filter select', () => {
+  it('renders category filter select', async () => {
+    const user = userEvent.setup()
     renderBar()
+    await user.click(screen.getByRole('button', { name: /filters/i }))
     expect(screen.getByLabelText('Category filter')).toBeInTheDocument()
   })
 
-  it('renders type filter select', () => {
+  it('renders type filter select', async () => {
+    const user = userEvent.setup()
     renderBar()
+    await user.click(screen.getByRole('button', { name: /filters/i }))
     expect(screen.getByLabelText('Type filter')).toBeInTheDocument()
   })
 
-  it('renders account options', () => {
+  it('renders account options', async () => {
+    const user = userEvent.setup()
     renderBar()
+    await user.click(screen.getByRole('button', { name: /filters/i }))
     expect(screen.getByRole('option', { name: 'Checking' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Savings' })).toBeInTheDocument()
   })
 
-  it('renders category options', () => {
+  it('renders category options', async () => {
+    const user = userEvent.setup()
     renderBar()
+    await user.click(screen.getByRole('button', { name: /filters/i }))
     expect(screen.getByRole('option', { name: 'Groceries' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Transport' })).toBeInTheDocument()
   })
@@ -104,6 +116,7 @@ describe('FilterPanel — filter changes update URL', () => {
   it('sets account_id param when account selected', async () => {
     const user = userEvent.setup()
     const { onParams } = renderBar()
+    await user.click(screen.getByRole('button', { name: /filters/i }))
     await user.selectOptions(screen.getByLabelText('Account filter'), 'acc-1')
     const lastCall = onParams.mock.calls[onParams.mock.calls.length - 1][0]
     expect(lastCall.account_id).toBe('acc-1')
@@ -120,6 +133,7 @@ describe('FilterPanel — filter changes update URL', () => {
   it('sets transaction_type param when type selected', async () => {
     const user = userEvent.setup()
     const { onParams } = renderBar()
+    await user.click(screen.getByRole('button', { name: /filters/i }))
     await user.selectOptions(screen.getByLabelText('Type filter'), 'INCOME')
     const lastCall = onParams.mock.calls[onParams.mock.calls.length - 1][0]
     expect(lastCall.transaction_type).toBe('INCOME')
@@ -128,6 +142,7 @@ describe('FilterPanel — filter changes update URL', () => {
   it('sets category_id param when category selected', async () => {
     const user = userEvent.setup()
     const { onParams } = renderBar()
+    await user.click(screen.getByRole('button', { name: /filters/i }))
     await user.selectOptions(screen.getByLabelText('Category filter'), 'cat-2')
     const lastCall = onParams.mock.calls[onParams.mock.calls.length - 1][0]
     expect(lastCall.category_id).toBe('cat-2')
@@ -158,19 +173,23 @@ describe('FilterPanel — collapsible toggle', () => {
     expect(screen.getByRole('button', { name: /filters/i })).toBeInTheDocument()
   })
 
-  it('hides filter controls after clicking the toggle to close', async () => {
-    const user = userEvent.setup()
+  it('hides filter controls by default when no filters are active', () => {
     renderBar()
-    // panel starts open — close it
-    await user.click(screen.getByRole('button', { name: /filters/i }))
     expect(screen.queryByLabelText('Date from')).not.toBeInTheDocument()
   })
 
-  it('reveals filter controls after clicking toggle again to re-open', async () => {
+  it('reveals filter controls after clicking the toggle to open', async () => {
     const user = userEvent.setup()
     renderBar()
-    await user.click(screen.getByRole('button', { name: /filters/i }))  // close
-    await user.click(screen.getByRole('button', { name: /filters/i }))  // reopen
+    await user.click(screen.getByRole('button', { name: /filters/i }))
     expect(screen.getByLabelText('Date from')).toBeInTheDocument()
+  })
+
+  it('hides filter controls after clicking the toggle to close', async () => {
+    const user = userEvent.setup()
+    renderBar()
+    await user.click(screen.getByRole('button', { name: /filters/i }))  // open
+    await user.click(screen.getByRole('button', { name: /filters/i }))  // close
+    expect(screen.queryByLabelText('Date from')).not.toBeInTheDocument()
   })
 })
