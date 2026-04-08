@@ -68,16 +68,16 @@ export default function AccountsPage() {
   }
 
   if (loading) {
-    return <div className="p-6 text-gray-500 text-sm">Loading accounts…</div>
+    return <div className="p-6 text-stone-500 text-sm">Loading accounts…</div>
   }
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 md:p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Accounts</h1>
+        <h1 className="text-2xl font-bold text-stone-900">Accounts</h1>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+          className="flex items-center gap-1.5 px-4 py-2 border border-green-600 text-green-600 text-sm font-semibold rounded-lg hover:bg-green-50 transition-colors"
         >
           <Plus size={16} />
           Add Account
@@ -87,20 +87,20 @@ export default function AccountsPage() {
       <ErrorToast message={error} onDismiss={() => setError(null)} />
 
       {accounts.length === 0 && (
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-stone-500">
           No accounts yet. Create your first account to get started.
         </p>
       )}
 
-      <ul className="space-y-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {accounts.map(account => (
-          <li key={account.id} className="flex items-center gap-2">
+          <div key={account.id} className="flex items-center gap-2">
             <div className="flex-1">
               <AccountCard account={account} />
             </div>
             {deleteId === account.id ? (
               <span className="flex items-center gap-2 text-sm shrink-0">
-                <span className="text-gray-500 dark:text-gray-400">Delete?</span>
+                <span className="text-stone-500">Delete?</span>
                 <button
                   onClick={() => handleDelete(account.id)}
                   className="text-red-600 hover:text-red-800 font-medium"
@@ -109,7 +109,7 @@ export default function AccountsPage() {
                 </button>
                 <button
                   onClick={() => setDeleteId(null)}
-                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  className="text-stone-500 hover:text-stone-700"
                 >
                   No
                 </button>
@@ -118,23 +118,23 @@ export default function AccountsPage() {
               <span className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => openEdit(account)}
-                  className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded"
+                  className="p-1.5 text-stone-400 hover:text-stone-700 rounded"
                   aria-label="Edit"
                 >
                   <Pencil size={15} />
                 </button>
                 <button
                   onClick={() => setDeleteId(account.id)}
-                  className="p-1.5 text-gray-400 hover:text-red-600 rounded"
+                  className="p-1.5 text-stone-400 hover:text-red-600 rounded"
                   aria-label="Delete"
                 >
                   <Trash2 size={15} />
                 </button>
               </span>
             )}
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
 
       {showForm && (
         <AccountForm
