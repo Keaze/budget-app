@@ -202,3 +202,15 @@ describe('DashboardPage — mobile FAB', () => {
     expect(fab).toHaveAttribute('href', '/transactions/new')
   })
 })
+
+describe('DashboardPage — hero currency', () => {
+  it('hero total balance uses account currency instead of hardcoded $', async () => {
+    getAccountBalances.mockResolvedValue({ data: [
+      { id: 'acc-1', name: 'Euro Account', account_type: 'CHECKING', currency: 'EUR', balance: '1000.00' },
+    ]})
+    getTransactions.mockResolvedValue({ data: { data: [], page: 1, page_size: 10, total: 0 } })
+    renderPage()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    expect(screen.getByTestId('hero-total-balance')).toHaveTextContent('EUR 1000.00')
+  })
+})

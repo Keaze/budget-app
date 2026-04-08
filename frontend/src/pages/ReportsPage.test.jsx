@@ -239,6 +239,19 @@ describe('ReportsPage — account balances', () => {
   })
 })
 
+describe('ReportsPage — spending bar widths', () => {
+  it('scales bars to the maximum value, not the first item', async () => {
+    getSpendingByCategory.mockResolvedValue({ data: [
+      { category_id: 'cat-small', category_name: 'Small', color: '#dc2626', total: 45.0 },
+      { category_id: 'cat-large', category_name: 'Large', color: '#f87171', total: 120.5 },
+    ]})
+    renderPage()
+    await screen.findByRole('heading', { name: 'Reports' })
+    const largeBar = document.querySelector('[data-testid="spending-bar-fill-cat-large"]')
+    expect(largeBar).toHaveStyle('width: 100%')
+  })
+})
+
 describe('ReportsPage — tab navigation', () => {
   it('renders tab buttons for all three sections', async () => {
     renderPage()
