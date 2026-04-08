@@ -68,16 +68,16 @@ export default function CategoriesPage() {
   }
 
   if (loading) {
-    return <div className="p-6 text-gray-500 text-sm">Loading categories…</div>
+    return <div className="p-6 text-stone-500 text-sm">Loading categories…</div>
   }
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 md:p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Categories</h1>
+        <h1 className="text-2xl font-bold text-stone-900">Categories</h1>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+          className="flex items-center gap-1.5 px-4 py-2 border border-green-600 text-green-600 text-sm font-semibold rounded-lg hover:bg-green-50 transition-colors"
         >
           <Plus size={16} />
           Add Category
@@ -87,69 +87,64 @@ export default function CategoriesPage() {
       <ErrorToast message={error} onDismiss={() => setError(null)} />
 
       {categories.length === 0 && (
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-stone-500">
           No categories yet.
         </p>
       )}
 
-      <ul className="space-y-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {categories.map(cat => (
-          <li
-            key={cat.id}
-            className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md"
-          >
-            {cat.color && (
-              <span
-                className="w-4 h-4 rounded-full shrink-0"
-                style={{ backgroundColor: cat.color }}
-              />
+          <div key={cat.id} className="bg-white rounded-xl border border-stone-200 p-4 flex items-center gap-3">
+            {/* Emoji icon tile */}
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0"
+              style={{ background: (cat.color ?? '#6b7280') + '1f' }}
+            >
+              {cat.icon ?? '📁'}
+            </div>
+            {/* Name + color swatch */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-[14px] font-semibold text-stone-900 truncate">{cat.name}</p>
+                {cat.is_default && (
+                  <span className="text-[10px] font-semibold bg-stone-100 text-stone-400 px-2 py-0.5 rounded-full">Default</span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="inline-block w-3 h-3 rounded-full shrink-0" style={{ background: cat.color ?? '#6b7280' }} />
+                <span className="text-[11px] text-stone-400 font-mono">{cat.color ?? ''}</span>
+              </div>
+            </div>
+            {/* Actions — only for custom categories */}
+            {!cat.is_default && (
+              <div className="flex gap-1 shrink-0">
+                <button
+                  onClick={() => { setEditing(cat); setShowForm(true) }}
+                  className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100"
+                  aria-label={`Edit ${cat.name}`}
+                >
+                  <Pencil size={14} />
+                </button>
+                {deleteId === cat.id ? (
+                  <span className="flex items-center gap-1 text-sm">
+                    <span className="text-stone-500 text-xs">Delete?</span>
+                    <button onClick={() => handleDelete(cat.id)} className="text-red-600 font-medium text-xs">Yes</button>
+                    <button onClick={() => setDeleteId(null)} className="text-stone-500 text-xs">No</button>
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setDeleteId(cat.id)}
+                    className="p-1.5 text-stone-400 hover:text-red-600 rounded-lg hover:bg-stone-100"
+                    aria-label={`Delete ${cat.name}`}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
             )}
-            {cat.icon && <span className="text-lg leading-none">{cat.icon}</span>}
-            <span className="flex-1 text-sm font-medium text-gray-800 dark:text-gray-200">
-              {cat.name}
-            </span>
-
-            {cat.is_default ? (
-              <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full">
-                Default
-              </span>
-            ) : deleteId === cat.id ? (
-              <span className="flex items-center gap-2 text-sm">
-                <span className="text-gray-500 dark:text-gray-400">Delete?</span>
-                <button
-                  onClick={() => handleDelete(cat.id)}
-                  className="text-red-600 hover:text-red-800 font-medium"
-                >
-                  Yes
-                </button>
-                <button
-                  onClick={() => setDeleteId(null)}
-                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                >
-                  No
-                </button>
-              </span>
-            ) : (
-              <span className="flex items-center gap-1">
-                <button
-                  onClick={() => openEdit(cat)}
-                  className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded"
-                  aria-label="Edit"
-                >
-                  <Pencil size={15} />
-                </button>
-                <button
-                  onClick={() => setDeleteId(cat.id)}
-                  className="p-1.5 text-gray-400 hover:text-red-600 rounded"
-                  aria-label="Delete"
-                >
-                  <Trash2 size={15} />
-                </button>
-              </span>
-            )}
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
 
       {showForm && (
         <CategoryForm
