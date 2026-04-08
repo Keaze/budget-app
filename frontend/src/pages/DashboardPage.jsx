@@ -89,6 +89,7 @@ export default function DashboardPage() {
   }
 
   const { date_from, date_to, label: monthLabel } = currentMonthRange()
+  const displayCurrency = accounts.length > 0 ? accounts[0].currency : ''
   const totalBalance = accounts.reduce((sum, a) => sum + parseFloat(a.balance), 0)
   const txThisMonth = transactions.filter(tx => tx.transaction_type !== 'TRANSFER')
   const incomeTotal = txThisMonth
@@ -106,8 +107,8 @@ export default function DashboardPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-stone-400 mb-1">Total Balance</p>
-            <p className="text-4xl font-bold tracking-tight text-stone-900 tabular-nums">
-              ${totalBalance.toFixed(2)}
+            <p className="text-4xl font-bold tracking-tight text-stone-900 tabular-nums" data-testid="hero-total-balance">
+              {displayCurrency} {totalBalance.toFixed(2)}
             </p>
             <p className="text-[13px] text-stone-400 mt-1">
               Across {accounts.length} account{accounts.length !== 1 ? 's' : ''} · {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
@@ -116,17 +117,17 @@ export default function DashboardPage() {
           <div className="flex gap-3">
             <div className="bg-green-50 rounded-xl px-4 py-3 text-center min-w-[90px]">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-green-600 mb-1">Income</p>
-              <p className="text-lg font-bold text-green-600 tabular-nums">+${incomeTotal.toFixed(2)}</p>
+              <p className="text-lg font-bold text-green-600 tabular-nums">+{displayCurrency} {incomeTotal.toFixed(2)}</p>
               <p className="text-[10px] text-stone-400 mt-0.5">this month</p>
             </div>
             <div className="bg-red-50 rounded-xl px-4 py-3 text-center min-w-[90px]">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-red-600 mb-1">Expenses</p>
-              <p className="text-lg font-bold text-red-600 tabular-nums">-${expenseTotal.toFixed(2)}</p>
+              <p className="text-lg font-bold text-red-600 tabular-nums">-{displayCurrency} {expenseTotal.toFixed(2)}</p>
               <p className="text-[10px] text-stone-400 mt-0.5">this month</p>
             </div>
             <div className="bg-green-50 rounded-xl px-4 py-3 text-center min-w-[90px]">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-500 mb-1">Saved</p>
-              <p className="text-lg font-bold text-stone-900 tabular-nums">${(incomeTotal - expenseTotal).toFixed(2)}</p>
+              <p className="text-lg font-bold text-stone-900 tabular-nums">{displayCurrency} {(incomeTotal - expenseTotal).toFixed(2)}</p>
               <p className="text-[10px] text-stone-400 mt-0.5">net</p>
             </div>
           </div>

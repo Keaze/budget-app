@@ -135,20 +135,27 @@ export default function ReportsPage() {
                 <p className="text-sm text-stone-400">No expenses in this period.</p>
               ) : (
                 <div className="flex flex-col gap-3">
-                  {spending.map((item, i) => (
-                    <div key={item.category_id}>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-[13px] text-stone-700 font-medium">{item.category_name}</span>
-                        <span className="text-[13px] font-bold text-red-600 tabular-nums">${parseFloat(item.total).toFixed(2)}</span>
+                  {(() => {
+                    const maxSpending = Math.max(...spending.map(s => s.total))
+                    return spending.map((item, i) => (
+                      <div key={item.category_id}>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-[13px] text-stone-700 font-medium">{item.category_name}</span>
+                          <span className="text-[13px] font-bold text-red-600 tabular-nums">${parseFloat(item.total).toFixed(2)}</span>
+                        </div>
+                        <div className="h-2 bg-red-50 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            data-testid={`spending-bar-fill-${item.category_id}`}
+                            style={{
+                              width: `${(item.total / maxSpending) * 100}%`,
+                              background: SPENDING_COLORS[i % SPENDING_COLORS.length],
+                            }}
+                          />
+                        </div>
                       </div>
-                      <div className="h-2 bg-red-50 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{
-                          width: `${(item.total / spending[0].total) * 100}%`,
-                          background: SPENDING_COLORS[i % SPENDING_COLORS.length],
-                        }} />
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  })()}
                 </div>
               )}
             </div>
