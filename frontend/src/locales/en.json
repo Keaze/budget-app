@@ -95,6 +95,7 @@
 
   "transactions.title": "Transactions",
   "transactions.loading": "Loading transactions…",
+  "transactions.errorLoad": "Failed to load transactions.",
   "transactions.emptyStart": "No transactions found. Try adjusting your filters or",
   "transactions.emptyLink": "add a new transaction",
   "transactions.colDate": "Date",

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { Plus } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { getAccounts } from '../api/accounts'
 import { getCategories } from '../api/categories'
 import { getTransactions, deleteTransaction } from '../api/transactions'
@@ -11,6 +12,7 @@ import ErrorToast from '../components/ErrorToast'
 import { logger } from '../utils/logger'
 
 export default function TransactionsPage() {
+  const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const [accounts, setAccounts] = useState([])
   const [categories, setCategories] = useState([])
@@ -27,9 +29,7 @@ export default function TransactionsPage() {
         setAccounts(accsRes.data)
         setCategories(catsRes.data)
       })
-      .catch(err => {
-        logger.error('Failed to load accounts/categories', err)
-      })
+      .catch(err => logger.error('Failed to load accounts/categories', err))
   }, [])
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export default function TransactionsPage() {
       .then(res => setTxData(res.data))
       .catch(err => {
         logger.error('Failed to load transactions', err)
-        setError('Failed to load transactions.')
+        setError(t('transactions.errorLoad'))
       })
       .finally(() => setLoading(false))
   }, [paramsKey])
@@ -62,7 +62,7 @@ export default function TransactionsPage() {
       await deleteTransaction(id)
       setTxData(prev => ({
         ...prev,
-        data: prev.data.filter(t => t.id !== id),
+        data: prev.data.filter(tx => tx.id !== id),
         total: Math.max(0, prev.total - 1),
       }))
     } catch (err) {
@@ -76,7 +76,7 @@ export default function TransactionsPage() {
   return (
     <div className="p-4 md:p-6 max-w-5xl">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-stone-900">Transactions</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-stone-900">{t('transactions.title')}</h1>
       </div>
 
       <FilterPanel accounts={accounts} categories={categories} />
@@ -85,28 +85,27 @@ export default function TransactionsPage() {
 
       {loading ? (
         <div className="py-8 text-center text-stone-500 text-sm">
-          Loading transactions…
+          {t('transactions.loading')}
         </div>
       ) : txData.data.length === 0 ? (
         <div className="py-8 text-center text-stone-500 text-sm">
-          No transactions found. Try adjusting your filters or{' '}
+          {t('transactions.emptyStart')}{' '}
           <Link to="/transactions/new" className="text-green-600 hover:underline">
-            add a new transaction
+            {t('transactions.emptyLink')}
           </Link>
           .
         </div>
       ) : (
         <>
-          {/* Desktop table */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm bg-white rounded-xl border border-stone-200 overflow-hidden">
               <thead>
                 <tr className="border-b border-stone-200 bg-stone-50 text-left">
-                  <th className="py-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-stone-500">Date</th>
-                  <th className="py-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-stone-500">Description</th>
-                  <th className="py-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-stone-500">Category</th>
-                  <th className="py-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-stone-500">Account</th>
-                  <th className="py-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-stone-500 text-right">Amount</th>
+                  <th className="py-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-stone-500">{t('transactions.colDate')}</th>
+                  <th className="py-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-stone-500">{t('transactions.colDescription')}</th>
+                  <th className="py-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-stone-500">{t('transactions.colCategory')}</th>
+                  <th className="py-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-stone-500">{t('transactions.colAccount')}</th>
+                  <th className="py-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-stone-500 text-right">{t('transactions.colAmount')}</th>
                   <th className="py-2 px-4" />
                 </tr>
               </thead>
@@ -127,7 +126,6 @@ export default function TransactionsPage() {
             </table>
           </div>
 
-          {/* Mobile cards */}
           <div className="md:hidden">
             {txData.data.map(tx => (
               <TransactionCard
@@ -143,34 +141,32 @@ export default function TransactionsPage() {
             ))}
           </div>
 
-          {/* Pagination */}
           <div className="flex items-center justify-center gap-4 mt-6 text-sm">
             <button
               onClick={() => setPage(page - 1)}
               disabled={page <= 1}
               className="px-3 py-1.5 border border-stone-200 rounded-md text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:text-stone-400"
             >
-              Previous
+              {t('transactions.previous')}
             </button>
             <span className="text-stone-600">
-              Page {page} of {totalPages}
+              {t('transactions.page', { page, total: totalPages })}
             </span>
             <button
               onClick={() => setPage(page + 1)}
               disabled={page >= totalPages}
               className="px-3 py-1.5 border border-stone-200 rounded-md text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:text-stone-400"
             >
-              Next
+              {t('transactions.next')}
             </button>
           </div>
         </>
       )}
 
-      {/* Mobile FAB */}
       <Link
         to="/transactions/new"
         className="fixed bottom-20 right-4 z-40 md:hidden flex items-center justify-center w-14 h-14 bg-green-600 text-white rounded-full shadow-lg hover:bg-green-700"
-        aria-label="Add transaction"
+        aria-label={t('addTransaction.title')}
       >
         <Plus size={24} />
       </Link>

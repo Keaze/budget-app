@@ -95,6 +95,7 @@
 
   "transactions.title": "Transaktionen",
   "transactions.loading": "Transaktionen werden geladen…",
+  "transactions.errorLoad": "Transaktionen konnten nicht geladen werden.",
   "transactions.emptyStart": "Keine Transaktionen gefunden. Filter anpassen oder",
   "transactions.emptyLink": "neue Transaktion hinzufügen",
   "transactions.colDate": "Datum",
