@@ -1,6 +1,8 @@
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export default function ErrorToast({ message, onDismiss }) {
+  const { t } = useTranslation()
   if (!message) return null
   return (
     <div
@@ -10,7 +12,7 @@ export default function ErrorToast({ message, onDismiss }) {
       <span className="text-sm flex-1">{message}</span>
       <button
         onClick={onDismiss}
-        aria-label="Dismiss"
+        aria-label={t('common.dismiss')}
         className="flex-shrink-0 hover:opacity-80"
       >
         <X size={16} />
