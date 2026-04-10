@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export default function CategoryForm({ category, onSave, onClose }) {
+  const { t } = useTranslation()
   const [name, setName] = useState(category?.name ?? '')
   const [icon, setIcon] = useState(category?.icon ?? '')
   const [color, setColor] = useState(category?.color ?? '#6366f1')
@@ -12,7 +14,7 @@ export default function CategoryForm({ category, onSave, onClose }) {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!name.trim()) {
-      setNameError('Name is required')
+      setNameError(t('validation.nameRequired'))
       return
     }
     setNameError('')
@@ -36,13 +38,9 @@ export default function CategoryForm({ category, onSave, onClose }) {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between px-5 py-4 border-b border-stone-200">
           <h2 className="text-lg font-bold text-stone-900">
-            {category ? 'Edit Category' : 'New Category'}
+            {category ? t('categoryForm.titleEdit') : t('categoryForm.titleNew')}
           </h2>
-          <button
-            onClick={onClose}
-            className="p-1 rounded hover:bg-stone-100 text-stone-500"
-            aria-label="Close"
-          >
+          <button onClick={onClose} className="p-1 rounded hover:bg-stone-100 text-stone-500" aria-label="Close">
             <X size={18} />
           </button>
         </div>
@@ -54,7 +52,7 @@ export default function CategoryForm({ category, onSave, onClose }) {
 
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-1">
-              Name <span className="text-red-500">*</span>
+              {t('categoryForm.labelName')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -68,7 +66,7 @@ export default function CategoryForm({ category, onSave, onClose }) {
 
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-1">
-              Icon <span className="text-stone-400 font-normal">(emoji, optional)</span>
+              {t('categoryForm.labelIcon')} <span className="text-stone-400 font-normal">{t('categoryForm.iconOptional')}</span>
             </label>
             <input
               type="text"
@@ -81,7 +79,7 @@ export default function CategoryForm({ category, onSave, onClose }) {
 
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-1">
-              Color <span className="text-stone-400 font-normal">(optional)</span>
+              {t('categoryForm.labelColor')} <span className="text-stone-400 font-normal">{t('categoryForm.colorOptional')}</span>
             </label>
             <div className="flex items-center gap-3">
               <input
@@ -95,19 +93,11 @@ export default function CategoryForm({ category, onSave, onClose }) {
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm text-stone-600 border border-stone-200 rounded-md hover:bg-stone-50"
-            >
-              Cancel
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-stone-600 border border-stone-200 rounded-md hover:bg-stone-50">
+              {t('common.cancel')}
             </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-2.5 bg-green-600 text-white text-[13px] font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50"
-            >
-              {saving ? 'Saving…' : 'Save'}
+            <button type="submit" disabled={saving} className="px-4 py-2.5 bg-green-600 text-white text-[13px] font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50">
+              {saving ? t('common.saving') : t('common.save')}
             </button>
           </div>
         </form>
