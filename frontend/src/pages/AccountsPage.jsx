@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { getAccounts, createAccount, updateAccount, deleteAccount } from '../api/accounts'
 import AccountCard from '../components/AccountCard'
 import AccountForm from '../components/AccountForm'
@@ -7,6 +8,7 @@ import ErrorToast from '../components/ErrorToast'
 import { logger } from '../utils/logger'
 
 export default function AccountsPage() {
+  const { t } = useTranslation()
   const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -24,7 +26,7 @@ export default function AccountsPage() {
       setAccounts(res.data)
     } catch (err) {
       logger.error('Failed to load accounts', err)
-      setError('Failed to load accounts.')
+      setError(t('accounts.errorLoad'))
     } finally {
       setLoading(false)
     }
@@ -48,48 +50,36 @@ export default function AccountsPage() {
     } catch (err) {
       logger.error('Failed to delete account', err)
       if (err.response?.status === 409) {
-        setError('This account has transactions and cannot be deleted.')
+        setError(t('accounts.errorDeleteConflict'))
       } else {
-        setError(err.response?.data?.error ?? 'Failed to delete account.')
+        setError(err.response?.data?.error ?? t('accounts.errorDelete'))
       }
     } finally {
       setDeleteId(null)
     }
   }
 
-  function openCreate() {
-    setEditing(null)
-    setShowForm(true)
-  }
-
-  function openEdit(account) {
-    setEditing(account)
-    setShowForm(true)
-  }
-
   if (loading) {
-    return <div className="p-6 text-stone-500 text-sm">Loading accounts…</div>
+    return <div className="p-6 text-stone-500 text-sm">{t('accounts.loading')}</div>
   }
 
   return (
     <div className="p-4 md:p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-stone-900">Accounts</h1>
+        <h1 className="text-2xl font-bold text-stone-900">{t('accounts.title')}</h1>
         <button
-          onClick={openCreate}
+          onClick={() => { setEditing(null); setShowForm(true) }}
           className="flex items-center gap-1.5 px-4 py-2 border border-green-600 text-green-600 text-sm font-semibold rounded-lg hover:bg-green-50 transition-colors"
         >
           <Plus size={16} />
-          Add Account
+          {t('accounts.addAccount')}
         </button>
       </div>
 
       <ErrorToast message={error} onDismiss={() => setError(null)} />
 
       {accounts.length === 0 && (
-        <p className="text-sm text-stone-500">
-          No accounts yet. Create your first account to get started.
-        </p>
+        <p className="text-sm text-stone-500">{t('accounts.empty')}</p>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -100,34 +90,16 @@ export default function AccountsPage() {
             </div>
             {deleteId === account.id ? (
               <span className="flex items-center gap-2 text-sm shrink-0">
-                <span className="text-stone-500">Delete?</span>
-                <button
-                  onClick={() => handleDelete(account.id)}
-                  className="text-red-600 hover:text-red-800 font-medium"
-                >
-                  Yes
-                </button>
-                <button
-                  onClick={() => setDeleteId(null)}
-                  className="text-stone-500 hover:text-stone-700"
-                >
-                  No
-                </button>
+                <span className="text-stone-500">{t('common.deletePrompt')}</span>
+                <button onClick={() => handleDelete(account.id)} className="text-red-600 hover:text-red-800 font-medium">{t('common.confirmYes')}</button>
+                <button onClick={() => setDeleteId(null)} className="text-stone-500 hover:text-stone-700">{t('common.confirmNo')}</button>
               </span>
             ) : (
               <span className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => openEdit(account)}
-                  className="p-1.5 text-stone-400 hover:text-stone-700 rounded"
-                  aria-label="Edit"
-                >
+                <button onClick={() => { setEditing(account); setShowForm(true) }} className="p-1.5 text-stone-400 hover:text-stone-700 rounded" aria-label="Edit">
                   <Pencil size={15} />
                 </button>
-                <button
-                  onClick={() => setDeleteId(account.id)}
-                  className="p-1.5 text-stone-400 hover:text-red-600 rounded"
-                  aria-label="Delete"
-                >
+                <button onClick={() => setDeleteId(account.id)} className="p-1.5 text-stone-400 hover:text-red-600 rounded" aria-label="Delete">
                   <Trash2 size={15} />
                 </button>
               </span>

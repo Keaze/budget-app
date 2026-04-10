@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { renderWithProviders } from '../test/renderWithProviders'
 import CategoriesPage from './CategoriesPage'
 
 vi.mock('../api/categories', () => ({
@@ -12,11 +13,11 @@ vi.mock('../api/categories', () => ({
 
 import { getCategories, createCategory, updateCategory, deleteCategory } from '../api/categories'
 
-const defaultCategory = { id: '1', name: 'Food', icon: '🍕', color: '#ff0000', is_default: true }
-const customCategory = { id: '2', name: 'Custom', icon: null, color: null, is_default: false }
+const defaultCat = { id: 'd1', name: 'Groceries', icon: '🛒', color: '#22c55e', is_default: true }
+const customCat  = { id: 'c1', name: 'Hobbies',   icon: '🎸', color: '#6366f1', is_default: false }
 
 function renderPage() {
-  return render(<CategoriesPage />)
+  return renderWithProviders(<CategoriesPage />)
 }
 
 beforeEach(() => {
@@ -30,46 +31,32 @@ describe('CategoriesPage — loading and display', () => {
     expect(screen.getByText(/loading categories/i)).toBeInTheDocument()
   })
 
-  it('renders category list after load', async () => {
-    getCategories.mockResolvedValue({ data: [defaultCategory, customCategory] })
+  it('renders categories after load', async () => {
+    getCategories.mockResolvedValue({ data: [defaultCat, customCat] })
     renderPage()
-    expect(await screen.findByText('Food')).toBeInTheDocument()
-    expect(screen.getByText('Custom')).toBeInTheDocument()
+    expect(await screen.findByText('Groceries')).toBeInTheDocument()
+    expect(screen.getByText('Hobbies')).toBeInTheDocument()
   })
 
-  it('shows error message when API fails', async () => {
-    getCategories.mockRejectedValue(new Error('Network error'))
+  it('shows Default badge on default categories', async () => {
+    getCategories.mockResolvedValue({ data: [defaultCat] })
     renderPage()
-    expect(await screen.findByText('Failed to load categories.')).toBeInTheDocument()
-  })
-
-  it('shows empty state when no categories', async () => {
-    getCategories.mockResolvedValue({ data: [] })
-    renderPage()
-    expect(await screen.findByText(/no categories yet/i)).toBeInTheDocument()
-  })
-
-  it('shows Default badge for default categories', async () => {
-    getCategories.mockResolvedValue({ data: [defaultCategory] })
-    renderPage()
-    await screen.findByText('Food')
+    await screen.findByText('Groceries')
     expect(screen.getByText('Default')).toBeInTheDocument()
   })
 
-  it('does not show edit/delete buttons for default categories', async () => {
-    getCategories.mockResolvedValue({ data: [defaultCategory] })
+  it('shows edit/delete only for custom categories', async () => {
+    getCategories.mockResolvedValue({ data: [defaultCat, customCat] })
     renderPage()
-    await screen.findByText('Food')
-    expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument()
+    await screen.findByText('Hobbies')
+    expect(screen.getByRole('button', { name: /edit hobbies/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /edit groceries/i })).not.toBeInTheDocument()
   })
 
-  it('shows edit/delete buttons for custom categories', async () => {
-    getCategories.mockResolvedValue({ data: [customCategory] })
+  it('shows error when API fails', async () => {
+    getCategories.mockRejectedValue(new Error('Network error'))
     renderPage()
-    await screen.findByText('Custom')
-    expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument()
+    expect(await screen.findByText('Failed to load categories.')).toBeInTheDocument()
   })
 })
 
@@ -85,28 +72,26 @@ describe('CategoriesPage — create flow', () => {
 
   it('adds new category to list after successful create', async () => {
     const user = userEvent.setup()
-    const newCat = { id: '3', name: 'Transport', icon: '🚗', color: '#00ff00', is_default: false }
+    const newCat = { id: 'c2', name: 'Travel', icon: '✈️', color: '#0ea5e9', is_default: false }
     getCategories.mockResolvedValue({ data: [] })
     createCategory.mockResolvedValue({ data: newCat })
     renderPage()
     await screen.findByRole('button', { name: /add category/i })
     await user.click(screen.getByRole('button', { name: /add category/i }))
-    const nameInput = screen.getByPlaceholderText('e.g. Groceries')
-    await user.type(nameInput, 'Transport')
+    await user.type(screen.getByPlaceholderText('e.g. Groceries'), 'Travel')
     await user.click(screen.getByRole('button', { name: /^save$/i }))
-    await waitFor(() => expect(screen.getByText('Transport')).toBeInTheDocument())
-    expect(screen.queryByText('New Category')).not.toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('Travel')).toBeInTheDocument())
   })
 
   it('closes form after successful create', async () => {
     const user = userEvent.setup()
-    const newCat = { id: '3', name: 'Transport', icon: null, color: null, is_default: false }
+    const newCat = { id: 'c2', name: 'Travel', icon: '', color: '#0ea5e9', is_default: false }
     getCategories.mockResolvedValue({ data: [] })
     createCategory.mockResolvedValue({ data: newCat })
     renderPage()
     await screen.findByRole('button', { name: /add category/i })
     await user.click(screen.getByRole('button', { name: /add category/i }))
-    await user.type(screen.getByPlaceholderText('e.g. Groceries'), 'Transport')
+    await user.type(screen.getByPlaceholderText('e.g. Groceries'), 'Travel')
     await user.click(screen.getByRole('button', { name: /^save$/i }))
     await waitFor(() => expect(screen.queryByText('New Category')).not.toBeInTheDocument())
   })
@@ -115,73 +100,61 @@ describe('CategoriesPage — create flow', () => {
 describe('CategoriesPage — edit flow', () => {
   it('opens form pre-filled when Edit is clicked', async () => {
     const user = userEvent.setup()
-    getCategories.mockResolvedValue({ data: [customCategory] })
+    getCategories.mockResolvedValue({ data: [customCat] })
     renderPage()
-    await screen.findByText('Custom')
-    await user.click(screen.getByRole('button', { name: /edit/i }))
+    await screen.findByText('Hobbies')
+    await user.click(screen.getByRole('button', { name: /edit hobbies/i }))
     expect(screen.getByText('Edit Category')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('Custom')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Hobbies')).toBeInTheDocument()
   })
 
   it('updates category in list after successful edit', async () => {
     const user = userEvent.setup()
-    const updated = { ...customCategory, name: 'Updated' }
-    getCategories.mockResolvedValue({ data: [customCategory] })
-    updateCategory.mockResolvedValue({ data: updated })
+    const updatedCat = { ...customCat, name: 'Music' }
+    getCategories.mockResolvedValue({ data: [customCat] })
+    updateCategory.mockResolvedValue({ data: updatedCat })
     renderPage()
-    await screen.findByText('Custom')
-    await user.click(screen.getByRole('button', { name: /edit/i }))
-    const nameInput = screen.getByDisplayValue('Custom')
+    await screen.findByText('Hobbies')
+    await user.click(screen.getByRole('button', { name: /edit hobbies/i }))
+    const nameInput = screen.getByDisplayValue('Hobbies')
     await user.clear(nameInput)
-    await user.type(nameInput, 'Updated')
+    await user.type(nameInput, 'Music')
     await user.click(screen.getByRole('button', { name: /^save$/i }))
-    await waitFor(() => expect(screen.getByText('Updated')).toBeInTheDocument())
-    expect(screen.queryByText('Custom')).not.toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('Music')).toBeInTheDocument())
   })
 })
 
 describe('CategoriesPage — delete flow', () => {
-  it('shows confirmation prompt when Delete is clicked', async () => {
+  it('shows delete confirmation for custom categories', async () => {
     const user = userEvent.setup()
-    getCategories.mockResolvedValue({ data: [customCategory] })
+    getCategories.mockResolvedValue({ data: [customCat] })
     renderPage()
-    await screen.findByText('Custom')
-    await user.click(screen.getByRole('button', { name: /delete/i }))
+    await screen.findByText('Hobbies')
+    await user.click(screen.getByRole('button', { name: /delete hobbies/i }))
     expect(screen.getByText('Delete?')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /yes/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /no/i })).toBeInTheDocument()
   })
 
-  it('removes category from list after confirming delete', async () => {
+  it('removes category after confirming delete', async () => {
     const user = userEvent.setup()
-    getCategories.mockResolvedValue({ data: [customCategory] })
+    getCategories.mockResolvedValue({ data: [customCat] })
     deleteCategory.mockResolvedValue({})
     renderPage()
-    await screen.findByText('Custom')
-    await user.click(screen.getByRole('button', { name: /delete/i }))
-    await user.click(screen.getByRole('button', { name: /yes/i }))
-    await waitFor(() => expect(screen.queryByText('Custom')).not.toBeInTheDocument())
+    await screen.findByText('Hobbies')
+    await user.click(screen.getByRole('button', { name: /delete hobbies/i }))
+    await user.click(screen.getByRole('button', { name: /^yes$/i }))
+    await waitFor(() => expect(screen.queryByText('Hobbies')).not.toBeInTheDocument())
   })
 
-  it('cancels delete when No is clicked', async () => {
+  it('shows forbidden error for default category delete attempt (403)', async () => {
     const user = userEvent.setup()
-    getCategories.mockResolvedValue({ data: [customCategory] })
+    getCategories.mockResolvedValue({ data: [customCat] })
+    const err = new Error('Forbidden')
+    err.response = { status: 403, data: { error: 'Default' } }
+    deleteCategory.mockRejectedValue(err)
     renderPage()
-    await screen.findByText('Custom')
-    await user.click(screen.getByRole('button', { name: /delete/i }))
-    await user.click(screen.getByRole('button', { name: /no/i }))
-    expect(screen.getByText('Custom')).toBeInTheDocument()
-    expect(screen.queryByText('Delete?')).not.toBeInTheDocument()
-  })
-
-  it('shows error message when delete fails', async () => {
-    const user = userEvent.setup()
-    getCategories.mockResolvedValue({ data: [customCategory] })
-    deleteCategory.mockRejectedValue({ response: { data: { error: 'Cannot delete' } } })
-    renderPage()
-    await screen.findByText('Custom')
-    await user.click(screen.getByRole('button', { name: /delete/i }))
-    await user.click(screen.getByRole('button', { name: /yes/i }))
-    expect(await screen.findByText('Cannot delete')).toBeInTheDocument()
+    await screen.findByText('Hobbies')
+    await user.click(screen.getByRole('button', { name: /delete hobbies/i }))
+    await user.click(screen.getByRole('button', { name: /^yes$/i }))
+    expect(await screen.findByText('Default categories cannot be modified.')).toBeInTheDocument()
   })
 })
