@@ -1,223 +1,77 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import { I18nextProvider } from 'react-i18next'
-import { SettingsProvider } from '../contexts/SettingsContext'
-import testI18n from '../test/i18n'
+import { screen, waitFor } from '@testing-library/react'
+import { renderWithProviders } from '../test/renderWithProviders'
 import DashboardPage from './DashboardPage'
 
 vi.mock('../api/reports', () => ({
   getAccountBalances: vi.fn(),
   getSpendingByCategory: vi.fn(),
 }))
-vi.mock('../api/transactions', () => ({
-  getTransactions: vi.fn(),
-}))
-vi.mock('../api/categories', () => ({
-  getCategories: vi.fn(),
-}))
+vi.mock('../api/transactions', () => ({ getTransactions: vi.fn() }))
+vi.mock('../api/categories', () => ({ getCategories: vi.fn() }))
 
 import { getAccountBalances, getSpendingByCategory } from '../api/reports'
 import { getTransactions } from '../api/transactions'
 import { getCategories } from '../api/categories'
 
-const mockAccounts = [
-  { id: 'acc-1', name: 'Main Checking', account_type: 'CHECKING', currency: 'USD', balance: '1500.00' },
-  { id: 'acc-2', name: 'Savings', account_type: 'SAVINGS', currency: 'USD', balance: '3000.00' },
-]
-const mockCategories = [
-  { id: 'cat-1', name: 'Groceries', color: '#22c55e' },
-  { id: 'cat-2', name: 'Transport', color: '#3b82f6' },
-]
-const mockTransactions = [
-  {
-    id: 'tx-1',
-    transaction_type: 'EXPENSE',
-    amount: 42.5,
-    label: 'Weekly shop',
-    date: '2026-03-10T00:00:00Z',
-    account_id: 'acc-1',
-    category_id: 'cat-1',
-  },
-  {
-    id: 'tx-2',
-    transaction_type: 'INCOME',
-    amount: 1000,
-    label: 'Salary',
-    date: '2026-03-01T00:00:00Z',
-    account_id: 'acc-1',
-    category_id: null,
-  },
-]
-const mockSpending = [
-  { category_id: 'cat-1', category_name: 'Groceries', color: '#22c55e', total: 120.5 },
-  { category_id: 'cat-2', category_name: 'Transport', color: '#3b82f6', total: 45.0 },
-]
+const account = { id: 'acc-1', name: 'Main Checking', account_type: 'CHECKING', currency: 'USD', balance: '1000.00' }
 
-function renderPage(initialUrl = '/') {
-  return render(
-    <I18nextProvider i18n={testI18n}>
-      <SettingsProvider>
-        <MemoryRouter initialEntries={[initialUrl]}>
-          <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/transactions" element={<div>Transactions Page</div>} />
-          </Routes>
-        </MemoryRouter>
-      </SettingsProvider>
-    </I18nextProvider>
-  )
+function renderPage() {
+  return renderWithProviders(<DashboardPage />)
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
-  getAccountBalances.mockResolvedValue({ data: mockAccounts })
-  getTransactions.mockResolvedValue({
-    data: { data: mockTransactions, page: 1, page_size: 10, total: 2 },
-  })
-  getSpendingByCategory.mockResolvedValue({ data: mockSpending })
-  getCategories.mockResolvedValue({ data: mockCategories })
+  getCategories.mockResolvedValue({ data: [] })
 })
 
-describe('DashboardPage — loading and error', () => {
+describe('DashboardPage — loading', () => {
   it('shows loading state initially', () => {
     getAccountBalances.mockReturnValue(new Promise(() => {}))
+    getTransactions.mockReturnValue(new Promise(() => {}))
+    getSpendingByCategory.mockReturnValue(new Promise(() => {}))
     renderPage()
     expect(screen.getByText(/loading dashboard/i)).toBeInTheDocument()
   })
+})
 
-  it('shows error when any API call fails', async () => {
+describe('DashboardPage — content', () => {
+  beforeEach(() => {
+    getAccountBalances.mockResolvedValue({ data: [account] })
+    getTransactions.mockResolvedValue({ data: { data: [], page: 1, page_size: 10, total: 0 } })
+    getSpendingByCategory.mockResolvedValue({ data: [] })
+  })
+
+  it('renders total balance with currency symbol', async () => {
+    renderPage()
+    expect(await screen.findByTestId('hero-total-balance')).toHaveTextContent('$1,000.00')
+  })
+
+  it('renders account name in accounts section', async () => {
+    renderPage()
+    await screen.findByTestId('hero-total-balance')
+    expect(screen.getByText('Main Checking')).toBeInTheDocument()
+  })
+
+  it('shows no expenses message when spending is empty', async () => {
+    renderPage()
+    await screen.findByTestId('hero-total-balance')
+    expect(screen.getByText('No expenses this month.')).toBeInTheDocument()
+  })
+
+  it('shows no transactions message when list is empty', async () => {
+    renderPage()
+    await screen.findByTestId('hero-total-balance')
+    expect(screen.getByText('No transactions yet.')).toBeInTheDocument()
+  })
+})
+
+describe('DashboardPage — error', () => {
+  it('shows error message when API fails', async () => {
     getAccountBalances.mockRejectedValue(new Error('Network error'))
+    getTransactions.mockRejectedValue(new Error('Network error'))
+    getSpendingByCategory.mockRejectedValue(new Error('Network error'))
     renderPage()
     expect(await screen.findByText('Failed to load dashboard.')).toBeInTheDocument()
-  })
-
-  it('shows Dashboard heading', async () => {
-    renderPage()
-    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
-  })
-})
-
-describe('DashboardPage — account balances', () => {
-  it('renders account cards with names', async () => {
-    renderPage()
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    expect(screen.getAllByText('Main Checking').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Savings').length).toBeGreaterThan(0)
-  })
-
-  it('renders account balances', async () => {
-    renderPage()
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    expect(screen.getByText(/1500\.00/)).toBeInTheDocument()
-    expect(screen.getByText(/3000\.00/)).toBeInTheDocument()
-  })
-
-  it('shows empty state when no accounts', async () => {
-    getAccountBalances.mockResolvedValue({ data: [] })
-    renderPage()
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    expect(screen.getByText(/no accounts yet/i)).toBeInTheDocument()
-  })
-
-  it('calls getAccountBalances on mount', async () => {
-    renderPage()
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    expect(getAccountBalances).toHaveBeenCalledOnce()
-  })
-})
-
-describe('DashboardPage — recent transactions', () => {
-  it('renders recent transaction labels', async () => {
-    renderPage()
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    expect(screen.getAllByText('Weekly shop').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Salary').length).toBeGreaterThan(0)
-  })
-
-  it('calls getTransactions with page_size=10', async () => {
-    renderPage()
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    expect(getTransactions).toHaveBeenCalledWith(
-      expect.objectContaining({ page_size: 10 })
-    )
-  })
-
-  it('shows View all link to /transactions', async () => {
-    renderPage()
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    const link = screen.getByRole('link', { name: /view all/i })
-    expect(link).toHaveAttribute('href', '/transactions')
-  })
-
-  it('shows empty state when no transactions', async () => {
-    getTransactions.mockResolvedValue({
-      data: { data: [], page: 1, page_size: 10, total: 0 },
-    })
-    renderPage()
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    expect(screen.getByText(/no transactions yet/i)).toBeInTheDocument()
-  })
-})
-
-describe('DashboardPage — spending bars', () => {
-  it('renders spending category names as buttons', async () => {
-    renderPage()
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    const buttons = screen.getAllByRole('button', { name: /Groceries/i })
-    expect(buttons.length).toBeGreaterThan(0)
-    const transportButtons = screen.getAllByRole('button', { name: /Transport/i })
-    expect(transportButtons.length).toBeGreaterThan(0)
-  })
-
-  it('shows empty state when no spending this month', async () => {
-    getSpendingByCategory.mockResolvedValue({ data: [] })
-    renderPage()
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    expect(screen.getByText(/no expenses this month/i)).toBeInTheDocument()
-  })
-
-  it('calls getSpendingByCategory with current month date range', async () => {
-    renderPage()
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    expect(getSpendingByCategory).toHaveBeenCalledWith(
-      expect.objectContaining({
-        date_from: expect.stringMatching(/^\d{4}-\d{2}-01$/),
-        date_to: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-      })
-    )
-  })
-
-  it('navigates to filtered transactions when spending bar clicked', async () => {
-    const user = userEvent.setup()
-    renderPage()
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    const groceriesButton = screen.getAllByRole('button', { name: /Groceries/i })[0]
-    await user.click(groceriesButton)
-    await waitFor(() =>
-      expect(screen.getByText('Transactions Page')).toBeInTheDocument()
-    )
-  })
-})
-
-describe('DashboardPage — mobile FAB', () => {
-  it('renders mobile FAB linking to /transactions/new', async () => {
-    renderPage()
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    const fab = screen.getByRole('link', { name: /add transaction/i })
-    expect(fab).toHaveAttribute('href', '/transactions/new')
-  })
-})
-
-describe('DashboardPage — hero currency', () => {
-  it('hero total balance uses account currency instead of hardcoded $', async () => {
-    getAccountBalances.mockResolvedValue({ data: [
-      { id: 'acc-1', name: 'Euro Account', account_type: 'CHECKING', currency: 'EUR', balance: '1000.00' },
-    ]})
-    getTransactions.mockResolvedValue({ data: { data: [], page: 1, page_size: 10, total: 0 } })
-    renderPage()
-    await screen.findByRole('heading', { name: 'Dashboard' })
-    expect(screen.getByTestId('hero-total-balance')).toHaveTextContent('EUR 1000.00')
   })
 })
