@@ -192,7 +192,7 @@ export default function ReportsPage() {
                         <Cell key={entry.category_id} fill={SPENDING_COLORS[i % SPENDING_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => [formatAmount(value, displayCurrency, decimalSep)]} />
+                    <Tooltip formatter={(value, name) => [formatAmount(value, displayCurrency, decimalSep), name]} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -220,7 +220,7 @@ export default function ReportsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
                 <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#78716c' }} />
                 <YAxis tick={{ fontSize: 12, fill: '#78716c' }} />
-                <Tooltip formatter={v => [formatAmount(v, displayCurrency, decimalSep)]} />
+                <Tooltip formatter={(v, name) => [formatAmount(v, displayCurrency, decimalSep), name]} />
                 <Legend />
                 <Bar dataKey="income" name={t('reports.barIncome')} fill="#16a34a" />
                 <Bar dataKey="expenses" name={t('reports.barExpenses')} fill="#dc2626" />
