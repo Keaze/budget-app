@@ -95,7 +95,7 @@ export default function DashboardPage() {
 
   const { date_from, date_to, monthIndex } = currentMonthRange()
   const monthLabel = new Intl.DateTimeFormat(i18n.language, { month: 'long' }).format(new Date(2000, monthIndex, 1))
-  const displayCurrency = accounts.length > 0 ? accounts[0].currency : 'USD'
+  const displayCurrency = accounts[0]?.currency ?? null
   const totalBalance = accounts.reduce((sum, a) => sum + parseFloat(a.balance), 0)
   const txThisMonth = transactions.filter(tx => tx.transaction_type !== 'TRANSFER')
   const incomeTotal = txThisMonth.filter(tx => tx.transaction_type === 'INCOME').reduce((sum, tx) => sum + parseFloat(tx.amount), 0)

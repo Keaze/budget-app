@@ -93,7 +93,7 @@ export default function ReportsPage() {
       .finally(() => setLoadingAccounts(false))
   }, [t])
 
-  const displayCurrency = accounts[0]?.currency ?? 'USD'
+  const displayCurrency = accounts[0]?.currency ?? null
 
   const tabs = [
     { id: 'spending',  label: t('reports.tabSpending')  },

@@ -10,6 +10,9 @@
  */
 export function formatAmount(amount, currency, decimalSep = '.') {
   const value = parseFloat(amount)
+  if (!currency) {
+    return value.toFixed(2)
+  }
   const formatted = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,

@@ -50,6 +50,7 @@ describe('ReportsPage — spending tab', () => {
   })
 
   it('shows category name and formatted amount', async () => {
+    getAccountBalances.mockResolvedValue({ data: [account] })
     getSpendingByCategory.mockResolvedValue({ data: [spendingItem] })
     renderPage()
     expect(await screen.findByText('Groceries')).toBeInTheDocument()
