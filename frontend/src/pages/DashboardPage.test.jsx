@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { Routes, Route } from 'react-router-dom'
 import { renderWithProviders } from '../test/renderWithProviders'
 import DashboardPage from './DashboardPage'
 
@@ -14,18 +16,54 @@ import { getAccountBalances, getSpendingByCategory } from '../api/reports'
 import { getTransactions } from '../api/transactions'
 import { getCategories } from '../api/categories'
 
-const account = { id: 'acc-1', name: 'Main Checking', account_type: 'CHECKING', currency: 'USD', balance: '1000.00' }
+const mockAccounts = [
+  { id: 'acc-1', name: 'Main Checking', account_type: 'CHECKING', currency: 'USD', balance: '1500.00' },
+  { id: 'acc-2', name: 'Savings', account_type: 'SAVINGS', currency: 'USD', balance: '3000.00' },
+]
+const mockTransactions = [
+  {
+    id: 'tx-1',
+    transaction_type: 'EXPENSE',
+    amount: 42.5,
+    label: 'Weekly shop',
+    date: '2026-03-10T00:00:00Z',
+    account_id: 'acc-1',
+    category_id: 'cat-1',
+  },
+  {
+    id: 'tx-2',
+    transaction_type: 'INCOME',
+    amount: 1000,
+    label: 'Salary',
+    date: '2026-03-01T00:00:00Z',
+    account_id: 'acc-1',
+    category_id: null,
+  },
+]
+const mockSpending = [
+  { category_id: 'cat-1', category_name: 'Groceries', color: '#22c55e', total: 120.5 },
+  { category_id: 'cat-2', category_name: 'Transport', color: '#3b82f6', total: 45.0 },
+]
 
 function renderPage() {
-  return renderWithProviders(<DashboardPage />)
+  return renderWithProviders(
+    <Routes>
+      <Route path="/" element={<DashboardPage />} />
+      <Route path="/transactions" element={<div>Transactions Page</div>} />
+    </Routes>,
+    { route: '/' }
+  )
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  getAccountBalances.mockResolvedValue({ data: mockAccounts })
+  getTransactions.mockResolvedValue({ data: { data: mockTransactions, page: 1, page_size: 10, total: 2 } })
+  getSpendingByCategory.mockResolvedValue({ data: mockSpending })
   getCategories.mockResolvedValue({ data: [] })
 })
 
-describe('DashboardPage — loading', () => {
+describe('DashboardPage — loading and error', () => {
   it('shows loading state initially', () => {
     getAccountBalances.mockReturnValue(new Promise(() => {}))
     getTransactions.mockReturnValue(new Promise(() => {}))
@@ -33,45 +71,137 @@ describe('DashboardPage — loading', () => {
     renderPage()
     expect(screen.getByText(/loading dashboard/i)).toBeInTheDocument()
   })
-})
 
-describe('DashboardPage — content', () => {
-  beforeEach(() => {
-    getAccountBalances.mockResolvedValue({ data: [account] })
-    getTransactions.mockResolvedValue({ data: { data: [], page: 1, page_size: 10, total: 0 } })
-    getSpendingByCategory.mockResolvedValue({ data: [] })
-  })
-
-  it('renders total balance with currency symbol', async () => {
-    renderPage()
-    expect(await screen.findByTestId('hero-total-balance')).toHaveTextContent('$1,000.00')
-  })
-
-  it('renders account name in accounts section', async () => {
-    renderPage()
-    await screen.findByTestId('hero-total-balance')
-    expect(screen.getByText('Main Checking')).toBeInTheDocument()
-  })
-
-  it('shows no expenses message when spending is empty', async () => {
-    renderPage()
-    await screen.findByTestId('hero-total-balance')
-    expect(screen.getByText('No expenses this month.')).toBeInTheDocument()
-  })
-
-  it('shows no transactions message when list is empty', async () => {
-    renderPage()
-    await screen.findByTestId('hero-total-balance')
-    expect(screen.getByText('No transactions yet.')).toBeInTheDocument()
-  })
-})
-
-describe('DashboardPage — error', () => {
-  it('shows error message when API fails', async () => {
+  it('shows error when API fails', async () => {
     getAccountBalances.mockRejectedValue(new Error('Network error'))
-    getTransactions.mockRejectedValue(new Error('Network error'))
-    getSpendingByCategory.mockRejectedValue(new Error('Network error'))
     renderPage()
     expect(await screen.findByText('Failed to load dashboard.')).toBeInTheDocument()
+  })
+
+  it('shows Dashboard heading', async () => {
+    renderPage()
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
+  })
+})
+
+describe('DashboardPage — account balances', () => {
+  it('renders account cards with names', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    expect(screen.getAllByText('Main Checking').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Savings').length).toBeGreaterThan(0)
+  })
+
+  it('renders individual account balances', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    expect(screen.getByText('$1,500.00')).toBeInTheDocument()
+    expect(screen.getByText('$3,000.00')).toBeInTheDocument()
+  })
+
+  it('shows empty state when no accounts', async () => {
+    getAccountBalances.mockResolvedValue({ data: [] })
+    getTransactions.mockResolvedValue({ data: { data: [], page: 1, page_size: 10, total: 0 } })
+    getSpendingByCategory.mockResolvedValue({ data: [] })
+    renderPage()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    expect(screen.getByText(/no accounts yet/i)).toBeInTheDocument()
+  })
+
+  it('calls getAccountBalances on mount', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    expect(getAccountBalances).toHaveBeenCalledOnce()
+  })
+})
+
+describe('DashboardPage — recent transactions', () => {
+  it('renders recent transaction labels', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    expect(screen.getAllByText('Weekly shop').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Salary').length).toBeGreaterThan(0)
+  })
+
+  it('calls getTransactions with page_size=10', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    expect(getTransactions).toHaveBeenCalledWith(
+      expect.objectContaining({ page_size: 10 })
+    )
+  })
+
+  it('shows View all link to /transactions', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    const link = screen.getByRole('link', { name: /view all/i })
+    expect(link).toHaveAttribute('href', '/transactions')
+  })
+
+  it('shows empty state when no transactions', async () => {
+    getTransactions.mockResolvedValue({ data: { data: [], page: 1, page_size: 10, total: 0 } })
+    renderPage()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    expect(screen.getByText(/no transactions yet/i)).toBeInTheDocument()
+  })
+})
+
+describe('DashboardPage — spending bars', () => {
+  it('renders spending category names as buttons', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    expect(screen.getAllByRole('button', { name: /groceries/i }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: /transport/i }).length).toBeGreaterThan(0)
+  })
+
+  it('shows empty state when no spending this month', async () => {
+    getSpendingByCategory.mockResolvedValue({ data: [] })
+    renderPage()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    expect(screen.getByText(/no expenses this month/i)).toBeInTheDocument()
+  })
+
+  it('calls getSpendingByCategory with current month date range', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    expect(getSpendingByCategory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        date_from: expect.stringMatching(/^\d{4}-\d{2}-01$/),
+        date_to: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      })
+    )
+  })
+
+  it('navigates to filtered transactions when spending bar clicked', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    const groceriesButton = screen.getAllByRole('button', { name: /groceries/i })[0]
+    await user.click(groceriesButton)
+    await waitFor(() =>
+      expect(screen.getByText('Transactions Page')).toBeInTheDocument()
+    )
+  })
+})
+
+describe('DashboardPage — mobile FAB', () => {
+  it('renders mobile FAB linking to /transactions/new', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    const fab = screen.getByRole('link', { name: /add transaction/i })
+    expect(fab).toHaveAttribute('href', '/transactions/new')
+  })
+})
+
+describe('DashboardPage — hero currency', () => {
+  it('hero total balance uses account currency, not hardcoded USD', async () => {
+    getAccountBalances.mockResolvedValue({ data: [
+      { id: 'acc-1', name: 'Euro Account', account_type: 'CHECKING', currency: 'EUR', balance: '1000.00' },
+    ]})
+    getTransactions.mockResolvedValue({ data: { data: [], page: 1, page_size: 10, total: 0 } })
+    getSpendingByCategory.mockResolvedValue({ data: [] })
+    renderPage()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    expect(screen.getByTestId('hero-total-balance')).toHaveTextContent('€1,000.00')
   })
 })
