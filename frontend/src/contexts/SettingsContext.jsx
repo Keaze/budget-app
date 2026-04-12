@@ -6,7 +6,7 @@ const DECIMAL_KEY = 'budget_decimal_sep'
 
 const SettingsContext = createContext(null)
 
-export function SettingsProvider({ children }) {
+export function SettingsProvider({ children, i18n: i18nInstance = i18n }) {
   const [language, setLanguageState] = useState(
     () => localStorage.getItem(LANG_KEY) ?? 'en'
   )
@@ -17,7 +17,7 @@ export function SettingsProvider({ children }) {
   function setLanguage(lang) {
     setLanguageState(lang)
     localStorage.setItem(LANG_KEY, lang)
-    i18n.changeLanguage(lang)
+    i18nInstance.changeLanguage(lang)
   }
 
   function setDecimalSep(sep) {

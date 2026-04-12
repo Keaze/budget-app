@@ -16,7 +16,7 @@ import testI18n from './i18n'
 export function renderWithProviders(ui, { route = '/' } = {}) {
   return render(
     <I18nextProvider i18n={testI18n}>
-      <SettingsProvider>
+      <SettingsProvider i18n={testI18n}>
         <MemoryRouter initialEntries={[route]}>
           {ui}
         </MemoryRouter>
