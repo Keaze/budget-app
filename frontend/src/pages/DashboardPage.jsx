@@ -81,7 +81,7 @@ export default function DashboardPage() {
         setError(t('dashboard.errorLoad'))
       })
       .finally(() => setLoading(false))
-  }, [])
+  }, [t])
 
   const categoriesMap = Object.fromEntries(categories.map(c => [c.id, c]))
   const accountsMap = Object.fromEntries(accounts.map(a => [a.id, a]))

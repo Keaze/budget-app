@@ -73,7 +73,7 @@ export default function ReportsPage() {
       .then(res => setSpending(res.data))
       .catch(err => { logger.error('Failed to load spending', err); setErrorSpending(t('reports.errorSpending')) })
       .finally(() => setLoadingSpending(false))
-  }, [dateFrom, dateTo])
+  }, [dateFrom, dateTo, t])
 
   useEffect(() => {
     setLoadingMonthly(true)
@@ -82,7 +82,7 @@ export default function ReportsPage() {
       .then(res => setMonthlySummary(res.data))
       .catch(err => { logger.error('Failed to load monthly summary', err); setErrorMonthly(t('reports.errorMonthly')) })
       .finally(() => setLoadingMonthly(false))
-  }, [year])
+  }, [year, t])
 
   useEffect(() => {
     setLoadingAccounts(true)
@@ -91,7 +91,7 @@ export default function ReportsPage() {
       .then(res => setAccounts(res.data))
       .catch(err => { logger.error('Failed to load account balances', err); setErrorAccounts(t('reports.errorAccounts')) })
       .finally(() => setLoadingAccounts(false))
-  }, [])
+  }, [t])
 
   const displayCurrency = accounts[0]?.currency ?? 'USD'
 
