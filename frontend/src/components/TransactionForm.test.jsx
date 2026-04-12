@@ -112,3 +112,135 @@ describe('TransactionForm — edit mode', () => {
     expect(screen.getByRole('button', { name: /transfer/i })).toBeDisabled()
   })
 })
+
+describe('TransactionForm — initial state', () => {
+  it('defaults to Expense type', () => {
+    renderForm()
+    expect(screen.getByRole('button', { name: 'Expense' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Income' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('defaults date to today', () => {
+    renderForm()
+    const today = new Date().toISOString().slice(0, 10)
+    expect(screen.getByDisplayValue(today)).toBeInTheDocument()
+  })
+
+  it('defaults account to first account', () => {
+    renderForm()
+    expect(screen.getByDisplayValue('Main Checking')).toBeInTheDocument()
+  })
+
+  it('does not show Transfer To field initially', () => {
+    renderForm()
+    expect(screen.queryByLabelText(/transfer to/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('TransactionForm — type selector', () => {
+  it('switches to Income type when Income clicked', async () => {
+    const user = userEvent.setup()
+    renderForm()
+    await user.click(screen.getByRole('button', { name: 'Income' }))
+    expect(screen.getByRole('button', { name: 'Income' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Expense' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('hides Transfer To field when switching away from Transfer', async () => {
+    const user = userEvent.setup()
+    renderForm()
+    await user.click(screen.getByRole('button', { name: 'Transfer' }))
+    expect(screen.getByLabelText(/transfer to/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Expense' }))
+    expect(screen.queryByLabelText(/transfer to/i)).not.toBeInTheDocument()
+  })
+
+  it('excludes source account from Transfer To options', async () => {
+    const user = userEvent.setup()
+    renderForm()
+    await user.click(screen.getByRole('button', { name: 'Transfer' }))
+    const destSelect = screen.getByLabelText(/transfer to/i)
+    const options = Array.from(destSelect.querySelectorAll('option')).map(o => o.textContent)
+    expect(options).not.toContain('Main Checking')
+    expect(options.some(o => o.includes('Savings'))).toBe(true)
+  })
+})
+
+describe('TransactionForm — submission', () => {
+  it('calls onSave with transfer_to_account_id for Transfer type', async () => {
+    const user = userEvent.setup()
+    const onSave = vi.fn().mockResolvedValue()
+    renderForm({ onSave })
+    await user.click(screen.getByRole('button', { name: 'Transfer' }))
+    await user.type(screen.getByPlaceholderText('0.00'), '200')
+    await user.type(screen.getByPlaceholderText(/grocery/i), 'Move funds')
+    await user.selectOptions(screen.getByLabelText(/transfer to/i), 'acc-2')
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          transaction_type: 'TRANSFER',
+          transfer_to_account_id: 'acc-2',
+        })
+      )
+    )
+  })
+
+  it('trims label whitespace before submitting', async () => {
+    const user = userEvent.setup()
+    const onSave = vi.fn().mockResolvedValue()
+    renderForm({ onSave })
+    await user.type(screen.getByPlaceholderText('0.00'), '10')
+    await user.type(screen.getByPlaceholderText(/grocery/i), '  My label  ')
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ label: 'My label' })
+      )
+    )
+  })
+})
+
+describe('TransactionForm — edit mode pre-fill', () => {
+  const transaction = {
+    id: 'tx-1',
+    transaction_type: 'INCOME',
+    account_id: 'acc-2',
+    amount: 500,
+    label: 'Freelance payment',
+    category_id: 'cat-1',
+    date: '2026-02-15T00:00:00Z',
+    notes: 'Project X',
+    transfer_to_account_id: null,
+  }
+
+  it('pre-fills type from transaction', () => {
+    renderForm({ transaction })
+    expect(screen.getByRole('button', { name: 'Income' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('pre-fills amount from transaction', () => {
+    renderForm({ transaction })
+    expect(screen.getByDisplayValue('500')).toBeInTheDocument()
+  })
+
+  it('pre-fills label from transaction', () => {
+    renderForm({ transaction })
+    expect(screen.getByDisplayValue('Freelance payment')).toBeInTheDocument()
+  })
+
+  it('pre-fills notes from transaction', () => {
+    renderForm({ transaction })
+    expect(screen.getByDisplayValue('Project X')).toBeInTheDocument()
+  })
+
+  it('pre-fills date from transaction', () => {
+    renderForm({ transaction })
+    expect(screen.getByDisplayValue('2026-02-15')).toBeInTheDocument()
+  })
+
+  it('disables account select in edit mode', () => {
+    renderForm({ transaction })
+    expect(screen.getByDisplayValue('Savings')).toBeDisabled()
+  })
+})
