@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Routes, Route, useSearchParams } from 'react-router-dom'
+import { Routes, Route, useSearchParams } from 'react-router-dom'
+import { renderWithProviders } from '../test/renderWithProviders'
 import FilterPanel from './FilterPanel'
 
 const accounts = [
@@ -13,66 +14,64 @@ const categories = [
   { id: 'cat-2', name: 'Transport' },
 ]
 
-// Spy component to read current URL search params in tests
 function ParamsSpy({ onParams }) {
   const [params] = useSearchParams()
   onParams(Object.fromEntries(params))
   return null
 }
 
-function renderBar(initialUrl = '/transactions') {
+function renderPanel(route = '/transactions') {
   const onParams = vi.fn()
-  render(
-    <MemoryRouter initialEntries={[initialUrl]}>
-      <Routes>
-        <Route
-          path="/transactions"
-          element={
-            <>
-              <FilterPanel accounts={accounts} categories={categories} />
-              <ParamsSpy onParams={onParams} />
-            </>
-          }
-        />
-      </Routes>
-    </MemoryRouter>
+  renderWithProviders(
+    <Routes>
+      <Route
+        path="/transactions"
+        element={
+          <>
+            <FilterPanel accounts={accounts} categories={categories} />
+            <ParamsSpy onParams={onParams} />
+          </>
+        }
+      />
+    </Routes>,
+    { route }
   )
   return { onParams }
 }
 
 describe('FilterPanel — rendering', () => {
-  it('renders date from and to inputs', async () => {
+  it('renders date inputs when open', async () => {
     const user = userEvent.setup()
-    renderBar()
+    renderPanel()
     await user.click(screen.getByRole('button', { name: /filters/i }))
-    expect(screen.getByLabelText('Date from')).toBeInTheDocument()
-    expect(screen.getByLabelText('Date to')).toBeInTheDocument()
+    expect(screen.getByLabelText('From')).toBeInTheDocument()
+    expect(screen.getByLabelText('To')).toBeInTheDocument()
   })
 
-  it('renders account filter select', async () => {
+  it('renders account filter select when open', async () => {
     const user = userEvent.setup()
-    renderBar()
+    renderPanel()
     await user.click(screen.getByRole('button', { name: /filters/i }))
-    expect(screen.getByLabelText('Account filter')).toBeInTheDocument()
+    expect(screen.getByLabelText('Account')).toBeInTheDocument()
   })
 
-  it('renders category filter select', async () => {
+  it('renders category filter select when open', async () => {
     const user = userEvent.setup()
-    renderBar()
+    renderPanel()
     await user.click(screen.getByRole('button', { name: /filters/i }))
-    expect(screen.getByLabelText('Category filter')).toBeInTheDocument()
+    expect(screen.getByLabelText('Category')).toBeInTheDocument()
   })
 
-  it('renders type filter select', async () => {
+  it('renders type filter select when open', async () => {
     const user = userEvent.setup()
-    renderBar()
+    renderPanel()
     await user.click(screen.getByRole('button', { name: /filters/i }))
-    expect(screen.getByLabelText('Type filter')).toBeInTheDocument()
+    expect(screen.getByLabelText('Type')).toBeInTheDocument()
   })
 
   it('renders account options', async () => {
     const user = userEvent.setup()
-    renderBar()
+    renderPanel()
     await user.click(screen.getByRole('button', { name: /filters/i }))
     expect(screen.getByRole('option', { name: 'Checking' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Savings' })).toBeInTheDocument()
@@ -80,78 +79,80 @@ describe('FilterPanel — rendering', () => {
 
   it('renders category options', async () => {
     const user = userEvent.setup()
-    renderBar()
+    renderPanel()
     await user.click(screen.getByRole('button', { name: /filters/i }))
     expect(screen.getByRole('option', { name: 'Groceries' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Transport' })).toBeInTheDocument()
   })
 
-  it('renders Clear filters button', () => {
-    renderBar('/transactions?account_id=acc-1')
+  it('renders Clear filters button when filters are active', () => {
+    renderPanel('/transactions?account_id=acc-1')
     expect(screen.getByRole('button', { name: /clear filters/i })).toBeInTheDocument()
   })
 
+  // Pre-select tests: panel auto-opens when activeCount > 0
   it('pre-selects account from URL param', () => {
-    renderBar('/transactions?account_id=acc-2')
-    expect(screen.getByLabelText('Account filter')).toHaveValue('acc-2')
+    renderPanel('/transactions?account_id=acc-2')
+    expect(screen.getByLabelText('Account')).toHaveValue('acc-2')
   })
 
   it('pre-selects category from URL param', () => {
-    renderBar('/transactions?category_id=cat-1')
-    expect(screen.getByLabelText('Category filter')).toHaveValue('cat-1')
+    renderPanel('/transactions?category_id=cat-1')
+    expect(screen.getByLabelText('Category')).toHaveValue('cat-1')
   })
 
   it('pre-selects type from URL param', () => {
-    renderBar('/transactions?transaction_type=EXPENSE')
-    expect(screen.getByLabelText('Type filter')).toHaveValue('EXPENSE')
+    renderPanel('/transactions?transaction_type=EXPENSE')
+    expect(screen.getByLabelText('Type')).toHaveValue('EXPENSE')
   })
 
-  it('pre-fills date from from URL param', () => {
-    renderBar('/transactions?date_from=2026-01-01')
-    expect(screen.getByLabelText('Date from')).toHaveValue('2026-01-01')
+  it('pre-fills date from URL param', () => {
+    renderPanel('/transactions?date_from=2026-01-01')
+    expect(screen.getByLabelText('From')).toHaveValue('2026-01-01')
   })
 })
 
 describe('FilterPanel — filter changes update URL', () => {
   it('sets account_id param when account selected', async () => {
     const user = userEvent.setup()
-    const { onParams } = renderBar()
+    const { onParams } = renderPanel()
     await user.click(screen.getByRole('button', { name: /filters/i }))
-    await user.selectOptions(screen.getByLabelText('Account filter'), 'acc-1')
+    await user.selectOptions(screen.getByLabelText('Account'), 'acc-1')
     const lastCall = onParams.mock.calls[onParams.mock.calls.length - 1][0]
     expect(lastCall.account_id).toBe('acc-1')
   })
 
   it('removes account_id param when All accounts selected', async () => {
     const user = userEvent.setup()
-    const { onParams } = renderBar('/transactions?account_id=acc-1')
-    await user.selectOptions(screen.getByLabelText('Account filter'), '')
+    const { onParams } = renderPanel('/transactions?account_id=acc-1')
+    await user.selectOptions(screen.getByLabelText('Account'), '')
     const lastCall = onParams.mock.calls[onParams.mock.calls.length - 1][0]
     expect(lastCall.account_id).toBeUndefined()
   })
 
   it('sets transaction_type param when type selected', async () => {
     const user = userEvent.setup()
-    const { onParams } = renderBar()
+    const { onParams } = renderPanel()
     await user.click(screen.getByRole('button', { name: /filters/i }))
-    await user.selectOptions(screen.getByLabelText('Type filter'), 'INCOME')
+    await user.selectOptions(screen.getByLabelText('Type'), 'INCOME')
     const lastCall = onParams.mock.calls[onParams.mock.calls.length - 1][0]
     expect(lastCall.transaction_type).toBe('INCOME')
   })
 
   it('sets category_id param when category selected', async () => {
     const user = userEvent.setup()
-    const { onParams } = renderBar()
+    const { onParams } = renderPanel()
     await user.click(screen.getByRole('button', { name: /filters/i }))
-    await user.selectOptions(screen.getByLabelText('Category filter'), 'cat-2')
+    await user.selectOptions(screen.getByLabelText('Category'), 'cat-2')
     const lastCall = onParams.mock.calls[onParams.mock.calls.length - 1][0]
     expect(lastCall.category_id).toBe('cat-2')
   })
 
   it('resets page to 1 when filter changed', async () => {
     const user = userEvent.setup()
-    const { onParams } = renderBar('/transactions?page=3&account_id=acc-1')
-    await user.selectOptions(screen.getByLabelText('Account filter'), 'acc-2')
+    // page=3 is active, so panel starts open
+    const { onParams } = renderPanel('/transactions?page=3&account_id=acc-1')
+    await user.selectOptions(screen.getByLabelText('Account'), 'acc-2')
     const lastCall = onParams.mock.calls[onParams.mock.calls.length - 1][0]
     expect(lastCall.page).toBeUndefined()
   })
@@ -160,7 +161,7 @@ describe('FilterPanel — filter changes update URL', () => {
 describe('FilterPanel — clear filters', () => {
   it('clears all params when Clear filters clicked', async () => {
     const user = userEvent.setup()
-    const { onParams } = renderBar('/transactions?account_id=acc-1&transaction_type=EXPENSE&page=2')
+    const { onParams } = renderPanel('/transactions?account_id=acc-1&transaction_type=EXPENSE&page=2')
     await user.click(screen.getByRole('button', { name: /clear filters/i }))
     const lastCall = onParams.mock.calls[onParams.mock.calls.length - 1][0]
     expect(lastCall).toEqual({})
@@ -169,27 +170,27 @@ describe('FilterPanel — clear filters', () => {
 
 describe('FilterPanel — collapsible toggle', () => {
   it('renders the Filters toggle button', () => {
-    renderBar()
+    renderPanel()
     expect(screen.getByRole('button', { name: /filters/i })).toBeInTheDocument()
   })
 
   it('hides filter controls by default when no filters are active', () => {
-    renderBar()
-    expect(screen.queryByLabelText('Date from')).not.toBeInTheDocument()
+    renderPanel()
+    expect(screen.queryByLabelText('From')).not.toBeInTheDocument()
   })
 
   it('reveals filter controls after clicking the toggle to open', async () => {
     const user = userEvent.setup()
-    renderBar()
+    renderPanel()
     await user.click(screen.getByRole('button', { name: /filters/i }))
-    expect(screen.getByLabelText('Date from')).toBeInTheDocument()
+    expect(screen.getByLabelText('From')).toBeInTheDocument()
   })
 
   it('hides filter controls after clicking the toggle to close', async () => {
     const user = userEvent.setup()
-    renderBar()
+    renderPanel()
     await user.click(screen.getByRole('button', { name: /filters/i }))  // open
     await user.click(screen.getByRole('button', { name: /filters/i }))  // close
-    expect(screen.queryByLabelText('Date from')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('From')).not.toBeInTheDocument()
   })
 })

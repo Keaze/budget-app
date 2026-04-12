@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { renderWithProviders } from '../test/renderWithProviders'
 import TransactionCard from './TransactionCard'
 
-const account = { id: 'acc-1', name: 'Main Checking' }
+const account = { id: 'acc-1', name: 'Main Checking', currency: 'USD' }
 const category = { id: 'cat-1', name: 'Groceries', color: '#22c55e' }
 
 const expenseTx = {
@@ -24,18 +24,16 @@ function renderCard(props = {}) {
   const onDelete = props.onDelete ?? vi.fn()
   const onDeleteConfirm = props.onDeleteConfirm ?? vi.fn()
   const onDeleteCancel = props.onDeleteCancel ?? vi.fn()
-  return render(
-    <MemoryRouter>
-      <TransactionCard
-        transaction={props.transaction ?? expenseTx}
-        account={account}
-        category={category}
-        deleting={props.deleting ?? false}
-        onDelete={onDelete}
-        onDeleteConfirm={onDeleteConfirm}
-        onDeleteCancel={onDeleteCancel}
-      />
-    </MemoryRouter>
+  return renderWithProviders(
+    <TransactionCard
+      transaction={props.transaction ?? expenseTx}
+      account={account}
+      category={category}
+      deleting={props.deleting ?? false}
+      onDelete={onDelete}
+      onDeleteConfirm={onDeleteConfirm}
+      onDeleteCancel={onDeleteCancel}
+    />
   )
 }
 
@@ -55,24 +53,19 @@ describe('TransactionCard — display', () => {
     expect(screen.getByText('Groceries')).toBeInTheDocument()
   })
 
-  it('renders the amount with 2 decimal places', () => {
+  it('renders EXPENSE amount with currency symbol and minus prefix', () => {
     renderCard()
-    expect(screen.getByText('-42.50')).toBeInTheDocument()
+    expect(screen.getByText('-$42.50')).toBeInTheDocument()
   })
 
-  it('prefixes INCOME amount with +', () => {
+  it('prefixes INCOME amount with + and currency symbol', () => {
     renderCard({ transaction: incomeTx })
-    expect(screen.getByText('+1000.00')).toBeInTheDocument()
+    expect(screen.getByText('+$1,000.00')).toBeInTheDocument()
   })
 
-  it('prefixes EXPENSE amount with -', () => {
-    renderCard()
-    expect(screen.getByText('-42.50')).toBeInTheDocument()
-  })
-
-  it('shows TRANSFER amount without sign', () => {
+  it('shows TRANSFER amount with currency symbol and no sign', () => {
     renderCard({ transaction: transferTx })
-    expect(screen.getByText('200.00')).toBeInTheDocument()
+    expect(screen.getByText('$200.00')).toBeInTheDocument()
   })
 
   it('renders edit link pointing to correct route', () => {
@@ -87,18 +80,16 @@ describe('TransactionCard — display', () => {
   })
 
   it('renders without category when category is null', () => {
-    render(
-      <MemoryRouter>
-        <TransactionCard
-          transaction={expenseTx}
-          account={account}
-          category={null}
-          deleting={false}
-          onDelete={vi.fn()}
-          onDeleteConfirm={vi.fn()}
-          onDeleteCancel={vi.fn()}
-        />
-      </MemoryRouter>
+    renderWithProviders(
+      <TransactionCard
+        transaction={expenseTx}
+        account={account}
+        category={null}
+        deleting={false}
+        onDelete={vi.fn()}
+        onDeleteConfirm={vi.fn()}
+        onDeleteCancel={vi.fn()}
+      />
     )
     expect(screen.queryByText('Groceries')).not.toBeInTheDocument()
   })
@@ -146,35 +137,17 @@ describe('TransactionCard — delete flow', () => {
 describe('TransactionCard — notes', () => {
   it('renders notes when present', () => {
     const tx = { ...expenseTx, notes: 'Weekly bulk shop' }
-    render(
-      <MemoryRouter>
-        <TransactionCard
-          transaction={tx}
-          account={account}
-          category={category}
-          deleting={false}
-          onDelete={vi.fn()}
-          onDeleteConfirm={vi.fn()}
-          onDeleteCancel={vi.fn()}
-        />
-      </MemoryRouter>
+    renderWithProviders(
+      <TransactionCard transaction={tx} account={account} category={category}
+        deleting={false} onDelete={vi.fn()} onDeleteConfirm={vi.fn()} onDeleteCancel={vi.fn()} />
     )
     expect(screen.getByText('Weekly bulk shop')).toBeInTheDocument()
   })
 
   it('does not render a notes element when notes is absent', () => {
-    render(
-      <MemoryRouter>
-        <TransactionCard
-          transaction={expenseTx}
-          account={account}
-          category={category}
-          deleting={false}
-          onDelete={vi.fn()}
-          onDeleteConfirm={vi.fn()}
-          onDeleteCancel={vi.fn()}
-        />
-      </MemoryRouter>
+    renderWithProviders(
+      <TransactionCard transaction={expenseTx} account={account} category={category}
+        deleting={false} onDelete={vi.fn()} onDeleteConfirm={vi.fn()} onDeleteCancel={vi.fn()} />
     )
     expect(screen.queryByTestId('tx-notes')).not.toBeInTheDocument()
   })

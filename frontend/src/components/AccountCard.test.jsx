@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { renderWithProviders } from '../test/renderWithProviders'
 import AccountCard from './AccountCard'
 
 const mockNavigate = vi.fn()
@@ -35,11 +35,7 @@ const creditCardAccount = {
 }
 
 function renderCard(account) {
-  return render(
-    <MemoryRouter>
-      <AccountCard account={account} />
-    </MemoryRouter>
-  )
+  return renderWithProviders(<AccountCard account={account} />)
 }
 
 beforeEach(() => {
@@ -67,20 +63,20 @@ describe('AccountCard — display', () => {
     expect(screen.getByText('Credit Card')).toBeInTheDocument()
   })
 
-  it('renders balance with currency', () => {
+  it('renders balance formatted with currency symbol', () => {
     renderCard(checkingAccount)
-    expect(screen.getByText(/USD.*1000\.00/)).toBeInTheDocument()
+    expect(screen.getByText('$1,000.00')).toBeInTheDocument()
   })
 
   it('shows balance in green when positive', () => {
     renderCard(checkingAccount)
-    const balance = screen.getByText(/1000\.00/)
+    const balance = screen.getByText('$1,000.00')
     expect(balance.className).toMatch(/text-green-600/)
   })
 
   it('shows balance in red when negative', () => {
     renderCard(creditCardAccount)
-    const balance = screen.getByText(/-250\.75/)
+    const balance = screen.getByText('-€250.75')
     expect(balance.className).toMatch(/text-red-600/)
   })
 })

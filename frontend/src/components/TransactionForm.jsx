@@ -1,11 +1,6 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import CategoryPicker from './CategoryPicker'
-
-const TYPES = [
-  { value: 'INCOME',   label: 'Income'   },
-  { value: 'EXPENSE',  label: 'Expense'  },
-  { value: 'TRANSFER', label: 'Transfer' },
-]
 
 function todayString() {
   return new Date().toISOString().slice(0, 10)
@@ -29,6 +24,14 @@ function activeTypeColor(type) {
 }
 
 export default function TransactionForm({ transaction, accounts, categories, onSave }) {
+  const { t } = useTranslation()
+
+  const TYPES = [
+    { value: 'INCOME',   label: t('txType.income')   },
+    { value: 'EXPENSE',  label: t('txType.expense')  },
+    { value: 'TRANSFER', label: t('txType.transfer') },
+  ]
+
   const editing = Boolean(transaction)
   const [type,               setType]               = useState(transaction?.transaction_type ?? 'EXPENSE')
   const [accountId,          setAccountId]          = useState(transaction?.account_id ?? (accounts[0]?.id ?? ''))
@@ -46,9 +49,9 @@ export default function TransactionForm({ transaction, accounts, categories, onS
 
   function validate() {
     let valid = true
-    if (!label.trim()) { setLabelError('Label is required'); valid = false }
+    if (!label.trim()) { setLabelError(t('validation.labelRequired')); valid = false }
     const parsed = parseFloat(amount)
-    if (!amount || isNaN(parsed) || parsed <= 0) { setAmountError('Amount must be greater than 0'); valid = false }
+    if (!amount || isNaN(parsed) || parsed <= 0) { setAmountError(t('validation.amountPositive')); valid = false }
     return valid
   }
 
@@ -84,32 +87,30 @@ export default function TransactionForm({ transaction, accounts, categories, onS
         <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{apiError}</p>
       )}
 
-      {/* Type pill toggle */}
       <div>
-        <label className={labelClass}>Type</label>
-        <div className="bg-green-50 rounded-full p-1 flex" role="group" aria-label="Transaction type">
-          {TYPES.map(t => (
+        <label className={labelClass}>{t('txForm.labelType')}</label>
+        <div className="bg-green-50 rounded-full p-1 flex" role="group" aria-label={t('txForm.labelType')}>
+          {TYPES.map(tx => (
             <button
-              key={t.value}
+              key={tx.value}
               type="button"
               disabled={editing}
-              onClick={() => { setType(t.value); setTransferToAccountId('') }}
-              aria-pressed={type === t.value}
+              onClick={() => { setType(tx.value); setTransferToAccountId('') }}
+              aria-pressed={type === tx.value}
               className={`flex-1 py-2 text-[13px] rounded-full transition-all ${
-                type === t.value
-                  ? `bg-white shadow-sm font-semibold ${activeTypeColor(t.value)}`
+                type === tx.value
+                  ? `bg-white shadow-sm font-semibold ${activeTypeColor(tx.value)}`
                   : 'text-stone-500 hover:text-stone-700 disabled:opacity-50'
               }`}
             >
-              {t.label}
+              {tx.label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Large amount display */}
       <div className="text-center py-2">
-        <label className={labelClass}>Amount</label>
+        <label className={labelClass}>{t('txForm.labelAmount')}</label>
         <div className="flex items-center justify-center gap-1 mt-1">
           <span className="text-2xl font-light text-stone-400">
             {selectedAccount?.currency ?? 'USD'}
@@ -127,10 +128,9 @@ export default function TransactionForm({ transaction, accounts, categories, onS
         {amountError && <p className="mt-1 text-xs text-red-600">{amountError}</p>}
       </div>
 
-      {/* Account */}
       <div>
         <label className={labelClass}>
-          Account <span className="text-red-500">*</span>
+          {t('txForm.labelAccount')} <span className="text-red-500">*</span>
         </label>
         <select
           value={accountId}
@@ -145,7 +145,7 @@ export default function TransactionForm({ transaction, accounts, categories, onS
       {type === 'TRANSFER' && (
         <div>
           <label htmlFor="transfer-to-account" className={labelClass}>
-            Transfer To <span className="text-red-500">*</span>
+            {t('txForm.labelTransferTo')} <span className="text-red-500">*</span>
           </label>
           <select
             id="transfer-to-account"
@@ -154,22 +154,21 @@ export default function TransactionForm({ transaction, accounts, categories, onS
             onChange={e => setTransferToAccountId(e.target.value)}
             className={inputClass + ' disabled:opacity-60'}
           >
-            <option value="">— Select destination account —</option>
+            <option value="">{t('txForm.selectDestination')}</option>
             {destinationAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
         </div>
       )}
 
-      {/* Label + Category in a grid */}
       <div>
         <label className={labelClass}>
-          Description <span className="text-red-500">*</span>
+          {t('txForm.labelDescription')} <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
           value={label}
           onChange={e => { setLabel(e.target.value); setLabelError('') }}
-          placeholder="e.g. Grocery shopping"
+          placeholder={t('txForm.placeholderDescription')}
           className={inputClass}
         />
         {labelError && <p className="mt-1 text-xs text-red-600">{labelError}</p>}
@@ -177,11 +176,16 @@ export default function TransactionForm({ transaction, accounts, categories, onS
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={labelClass}>Category</label>
-          <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
+          <label className={labelClass}>{t('txForm.labelCategory')}</label>
+          <CategoryPicker
+            categories={categories}
+            value={categoryId}
+            onChange={setCategoryId}
+            placeholder={t('txForm.selectNoCategory')}
+          />
         </div>
         <div>
-          <label className={labelClass}>Date <span className="text-red-500">*</span></label>
+          <label className={labelClass}>{t('txForm.labelDate')} <span className="text-red-500">*</span></label>
           <input
             type="date"
             value={date}
@@ -193,13 +197,13 @@ export default function TransactionForm({ transaction, accounts, categories, onS
 
       <div>
         <label className={labelClass}>
-          Notes <span className="text-stone-400 font-normal normal-case tracking-normal">(optional)</span>
+          {t('txForm.labelNotes')} <span className="text-stone-400 font-normal normal-case tracking-normal">{t('txForm.notesOptional')}</span>
         </label>
         <textarea
           value={notes}
           onChange={e => setNotes(e.target.value)}
           rows={3}
-          placeholder="Optional details…"
+          placeholder={t('txForm.placeholderNotes')}
           className={inputClass}
         />
       </div>
@@ -209,7 +213,7 @@ export default function TransactionForm({ transaction, accounts, categories, onS
         disabled={saving}
         className="w-full py-3 text-[13px] font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
       >
-        {saving ? 'Saving…' : 'Save'}
+        {saving ? t('common.saving') : t('common.save')}
       </button>
     </form>
   )

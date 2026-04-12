@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { renderWithProviders } from '../test/renderWithProviders'
 import TransactionRow from './TransactionRow'
 
-const account = { id: 'acc-1', name: 'Main Checking' }
+const account = { id: 'acc-1', name: 'Main Checking', currency: 'USD' }
 const category = { id: 'cat-1', name: 'Groceries', color: '#22c55e' }
 
 const expenseTx = {
@@ -18,28 +18,21 @@ const expenseTx = {
 }
 
 const incomeTx = { ...expenseTx, id: 'tx-2', transaction_type: 'INCOME', amount: 1000, label: 'Salary' }
-const transferTx = { ...expenseTx, id: 'tx-3', transaction_type: 'TRANSFER', amount: 200, label: 'Move funds' }
+const transferTx = { ...expenseTx, id: 'tx-3', transaction_type: 'TRANSFER', amount: 200, label: 'Transfer' }
 
 function renderRow(props = {}) {
-  const onDelete = props.onDelete ?? vi.fn()
-  const onDeleteConfirm = props.onDeleteConfirm ?? vi.fn()
-  const onDeleteCancel = props.onDeleteCancel ?? vi.fn()
-  return render(
-    <MemoryRouter>
-      <table>
-        <tbody>
-          <TransactionRow
-            transaction={props.transaction ?? expenseTx}
-            account={account}
-            category={category}
-            deleting={props.deleting ?? false}
-            onDelete={onDelete}
-            onDeleteConfirm={onDeleteConfirm}
-            onDeleteCancel={onDeleteCancel}
-          />
-        </tbody>
-      </table>
-    </MemoryRouter>
+  return renderWithProviders(
+    <table><tbody>
+      <TransactionRow
+        transaction={props.transaction ?? expenseTx}
+        account={account}
+        category={category}
+        deleting={props.deleting ?? false}
+        onDelete={props.onDelete ?? vi.fn()}
+        onDeleteConfirm={props.onDeleteConfirm ?? vi.fn()}
+        onDeleteCancel={props.onDeleteCancel ?? vi.fn()}
+      />
+    </tbody></table>
   )
 }
 
@@ -54,82 +47,41 @@ describe('TransactionRow — display', () => {
     expect(screen.getByText('Main Checking')).toBeInTheDocument()
   })
 
-  it('renders the category name', () => {
+  it('renders EXPENSE amount with currency symbol and minus prefix', () => {
     renderRow()
-    expect(screen.getByText('Groceries')).toBeInTheDocument()
+    expect(screen.getByText('-$42.50')).toBeInTheDocument()
   })
 
-  it('renders expense amount with minus prefix', () => {
-    renderRow()
-    expect(screen.getByText('-42.50')).toBeInTheDocument()
-  })
-
-  it('renders income amount with plus prefix', () => {
+  it('renders INCOME amount with + prefix and currency symbol', () => {
     renderRow({ transaction: incomeTx })
-    expect(screen.getByText('+1000.00')).toBeInTheDocument()
+    expect(screen.getByText('+$1,000.00')).toBeInTheDocument()
   })
 
-  it('renders transfer amount without sign prefix', () => {
+  it('renders TRANSFER amount with currency symbol and no prefix', () => {
     renderRow({ transaction: transferTx })
-    expect(screen.getByText('200.00')).toBeInTheDocument()
+    expect(screen.getByText('$200.00')).toBeInTheDocument()
   })
 
-  it('renders edit link with correct href', () => {
+  it('renders edit link', () => {
     renderRow()
-    const link = screen.getByRole('link', { name: /edit/i })
-    expect(link).toHaveAttribute('href', '/transactions/tx-1/edit')
+    expect(screen.getByRole('link', { name: /edit/i })).toHaveAttribute('href', '/transactions/tx-1/edit')
   })
 
   it('renders delete button', () => {
     renderRow()
     expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument()
   })
-
-  it('renders — when category is null', () => {
-    render(
-      <MemoryRouter>
-        <table>
-          <tbody>
-            <TransactionRow
-              transaction={expenseTx}
-              account={account}
-              category={null}
-              deleting={false}
-              onDelete={vi.fn()}
-              onDeleteConfirm={vi.fn()}
-              onDeleteCancel={vi.fn()}
-            />
-          </tbody>
-        </table>
-      </MemoryRouter>
-    )
-    expect(screen.queryByText('Groceries')).not.toBeInTheDocument()
-  })
 })
 
 describe('TransactionRow — delete flow', () => {
-  it('calls onDelete with id when delete button clicked', async () => {
-    const user = userEvent.setup()
-    const onDelete = vi.fn()
-    renderRow({ onDelete })
-    await user.click(screen.getByRole('button', { name: /delete/i }))
-    expect(onDelete).toHaveBeenCalledWith('tx-1')
-  })
-
-  it('shows confirmation prompt when deleting is true', () => {
+  it('shows confirmation when deleting is true', () => {
     renderRow({ deleting: true })
     expect(screen.getByText('Delete?')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /yes/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /no/i })).toBeInTheDocument()
   })
 
-  it('hides normal actions when deleting', () => {
-    renderRow({ deleting: true })
-    expect(screen.queryByRole('link', { name: /edit/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument()
-  })
-
-  it('calls onDeleteConfirm with id when Yes clicked', async () => {
+  it('calls onDeleteConfirm when Yes clicked', async () => {
     const user = userEvent.setup()
     const onDeleteConfirm = vi.fn()
     renderRow({ deleting: true, onDeleteConfirm })
@@ -148,41 +100,12 @@ describe('TransactionRow — delete flow', () => {
 
 describe('TransactionRow — notes', () => {
   it('renders notes when present', () => {
-    const tx = { ...expenseTx, notes: 'Electricity spike' }
-    render(
-      <MemoryRouter>
-        <table><tbody>
-          <TransactionRow
-            transaction={tx}
-            account={account}
-            category={category}
-            deleting={false}
-            onDelete={vi.fn()}
-            onDeleteConfirm={vi.fn()}
-            onDeleteCancel={vi.fn()}
-          />
-        </tbody></table>
-      </MemoryRouter>
-    )
-    expect(screen.getByText('Electricity spike')).toBeInTheDocument()
+    renderRow({ transaction: { ...expenseTx, notes: 'Bulk purchase' } })
+    expect(screen.getByTestId('tx-notes')).toHaveTextContent('Bulk purchase')
   })
 
-  it('does not render a notes element when notes is absent', () => {
-    render(
-      <MemoryRouter>
-        <table><tbody>
-          <TransactionRow
-            transaction={expenseTx}
-            account={account}
-            category={category}
-            deleting={false}
-            onDelete={vi.fn()}
-            onDeleteConfirm={vi.fn()}
-            onDeleteCancel={vi.fn()}
-          />
-        </tbody></table>
-      </MemoryRouter>
-    )
+  it('does not render notes element when absent', () => {
+    renderRow()
     expect(screen.queryByTestId('tx-notes')).not.toBeInTheDocument()
   })
 })

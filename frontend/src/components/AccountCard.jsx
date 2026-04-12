@@ -1,19 +1,25 @@
 import { useNavigate } from 'react-router-dom'
-
-const TYPE_LABELS = {
-  CHECKING: 'Checking',
-  SAVINGS: 'Savings',
-  CREDIT_CARD: 'Credit Card',
-}
-
-const TYPE_BADGE = {
-  CHECKING: 'bg-green-100 text-green-700',
-  SAVINGS: 'bg-green-100 text-green-700',
-  CREDIT_CARD: 'bg-red-50 text-red-600',
-}
+import { useTranslation } from 'react-i18next'
+import { useSettings } from '../contexts/SettingsContext'
+import { formatAmount } from '../utils/formatAmount'
 
 export default function AccountCard({ account }) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
+  const { decimalSep } = useSettings()
+
+  const TYPE_LABELS = {
+    CHECKING: t('accountType.checking'),
+    SAVINGS: t('accountType.savings'),
+    CREDIT_CARD: t('accountType.creditCard'),
+  }
+
+  const TYPE_BADGE = {
+    CHECKING: 'bg-green-100 text-green-700',
+    SAVINGS: 'bg-green-100 text-green-700',
+    CREDIT_CARD: 'bg-red-50 text-red-600',
+  }
+
   const balance = parseFloat(account.balance)
   const isNegative = balance < 0
 
@@ -31,9 +37,9 @@ export default function AccountCard({ account }) {
         </div>
         <div className="text-right">
           <p className={`text-2xl font-bold tabular-nums tracking-tight ${isNegative ? 'text-red-600' : 'text-green-600'}`}>
-            {account.currency} {balance.toFixed(2)}
+            {formatAmount(balance, account.currency, decimalSep)}
           </p>
-          <p className="text-xs text-stone-400 mt-1">Click to view transactions</p>
+          <p className="text-xs text-stone-400 mt-1">{t('account.viewTransactions')}</p>
         </div>
       </div>
     </button>

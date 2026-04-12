@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
-
-const ACCOUNT_TYPES = [
-  { value: 'CHECKING', label: 'Checking' },
-  { value: 'SAVINGS', label: 'Savings' },
-  { value: 'CREDIT_CARD', label: 'Credit Card' },
-]
+import { useTranslation } from 'react-i18next'
 
 export default function AccountForm({ account, onSave, onClose }) {
+  const { t } = useTranslation()
+
+  const ACCOUNT_TYPES = [
+    { value: 'CHECKING',    label: t('accountType.checking')  },
+    { value: 'SAVINGS',     label: t('accountType.savings')   },
+    { value: 'CREDIT_CARD', label: t('accountType.creditCard') },
+  ]
+
   const [name, setName] = useState(account?.name ?? '')
   const [accountType, setAccountType] = useState(account?.account_type ?? 'CHECKING')
   const [currency, setCurrency] = useState(account?.currency ?? 'USD')
@@ -21,7 +24,7 @@ export default function AccountForm({ account, onSave, onClose }) {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!name.trim()) {
-      setNameError('Name is required')
+      setNameError(t('validation.nameRequired'))
       return
     }
     setNameError('')
@@ -46,7 +49,7 @@ export default function AccountForm({ account, onSave, onClose }) {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between px-5 py-4 border-b border-stone-200">
           <h2 className="text-lg font-bold text-stone-900">
-            {account ? 'Edit Account' : 'New Account'}
+            {account ? t('accountForm.titleEdit') : t('accountForm.titleNew')}
           </h2>
           <button
             onClick={onClose}
@@ -64,33 +67,37 @@ export default function AccountForm({ account, onSave, onClose }) {
 
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-1">
-              Name <span className="text-red-500">*</span>
+              {t('accountForm.labelName')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={name}
               onChange={e => { setName(e.target.value); setNameError('') }}
               className="w-full border border-stone-200 rounded-lg px-3 py-2.5 text-[13px] bg-stone-50 text-stone-900 focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="e.g. Main Checking"
+              placeholder={t('accountForm.placeholderName')}
             />
             {nameError && <p className="mt-1 text-xs text-red-600">{nameError}</p>}
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-1">Type</label>
+            <label className="block text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-1">
+              {t('accountForm.labelType')}
+            </label>
             <select
               value={accountType}
               onChange={e => setAccountType(e.target.value)}
               className="w-full border border-stone-200 rounded-lg px-3 py-2.5 text-[13px] bg-stone-50 text-stone-900 focus:outline-none focus:ring-2 focus:ring-green-500"
             >
-              {ACCOUNT_TYPES.map(t => (
-                <option key={t.value} value={t.value}>{t.label}</option>
+              {ACCOUNT_TYPES.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-1">Currency</label>
+            <label className="block text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-1">
+              {t('accountForm.labelCurrency')}
+            </label>
             <input
               type="text"
               value={currency}
@@ -101,7 +108,9 @@ export default function AccountForm({ account, onSave, onClose }) {
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-1">Initial Balance</label>
+            <label className="block text-[11px] font-semibold uppercase tracking-wide text-stone-500 mb-1">
+              {t('accountForm.labelInitialBalance')}
+            </label>
             <input
               type="number"
               value={initialBalance}
@@ -117,14 +126,14 @@ export default function AccountForm({ account, onSave, onClose }) {
               onClick={onClose}
               className="px-4 py-2 text-sm text-stone-600 border border-stone-200 rounded-md hover:bg-stone-50"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={saving}
               className="px-4 py-2.5 bg-green-600 text-white text-[13px] font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50"
             >
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? t('common.saving') : t('common.save')}
             </button>
           </div>
         </form>

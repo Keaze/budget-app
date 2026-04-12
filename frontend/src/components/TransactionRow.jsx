@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom'
 import { Pencil, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { useSettings } from '../contexts/SettingsContext'
+import { formatAmount } from '../utils/formatAmount'
 
-function formatDate(dateStr) {
+function formatDate(dateStr, locale) {
   if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString(undefined, {
+  return new Date(dateStr).toLocaleDateString(locale, {
     year: 'numeric', month: 'short', day: 'numeric',
   })
 }
@@ -29,12 +32,15 @@ export default function TransactionRow({
   onDeleteConfirm,
   onDeleteCancel,
 }) {
+  const { t, i18n } = useTranslation()
+  const { decimalSep } = useSettings()
   const { id, transaction_type, amount, label, date, notes } = transaction
+  const currency = account?.currency ?? 'USD'
 
   return (
     <tr className="border-b border-stone-100 hover:bg-stone-50 even:bg-stone-50/50">
       <td className="py-3 px-4 text-[13px] text-stone-500 whitespace-nowrap">
-        {formatDate(date)}
+        {formatDate(date, i18n.language)}
       </td>
       <td className="py-3 px-4 max-w-[200px]">
         <p className="text-[13px] font-medium text-stone-900 truncate">{label}</p>
@@ -46,10 +52,7 @@ export default function TransactionRow({
         {category ? (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
             style={{ background: (category.color ?? '#6b7280') + '20', color: category.color ?? '#6b7280' }}>
-            <span
-              className="inline-block w-2 h-2 rounded-full shrink-0"
-              style={{ backgroundColor: category.color ?? '#6b7280' }}
-            />
+            <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: category.color ?? '#6b7280' }} />
             {category.name}
           </span>
         ) : (
@@ -60,14 +63,14 @@ export default function TransactionRow({
         {account?.name ?? '—'}
       </td>
       <td className={`py-3 px-4 text-[13px] font-bold tabular-nums tracking-tight text-right ${amountClass(transaction_type)}`}>
-        {amountPrefix(transaction_type)}{parseFloat(amount).toFixed(2)}
+        {amountPrefix(transaction_type)}{formatAmount(amount, currency, decimalSep)}
       </td>
       <td className="py-3 px-4 text-right">
         {deleting ? (
           <span className="flex items-center justify-end gap-2 text-sm">
-            <span className="text-stone-500">Delete?</span>
-            <button onClick={() => onDeleteConfirm(id)} className="text-red-600 hover:text-red-800 font-medium">Yes</button>
-            <button onClick={onDeleteCancel} className="text-stone-500 hover:text-stone-700">No</button>
+            <span className="text-stone-500">{t('common.deletePrompt')}</span>
+            <button onClick={() => onDeleteConfirm(id)} className="text-red-600 hover:text-red-800 font-medium">{t('common.confirmYes')}</button>
+            <button onClick={onDeleteCancel} className="text-stone-500 hover:text-stone-700">{t('common.confirmNo')}</button>
           </span>
         ) : (
           <span className="flex items-center justify-end gap-1">

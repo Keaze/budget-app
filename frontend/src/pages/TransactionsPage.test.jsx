@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { I18nextProvider } from 'react-i18next'
+import { SettingsProvider } from '../contexts/SettingsContext'
+import testI18n from '../test/i18n'
 import TransactionsPage from './TransactionsPage'
 
 vi.mock('../api/accounts', () => ({ getAccounts: vi.fn() }))
@@ -52,13 +55,17 @@ function mockTxResponse(transactions, { page = 1, total = null } = {}) {
 
 function renderPage(initialUrl = '/transactions') {
   return render(
-    <MemoryRouter initialEntries={[initialUrl]}>
-      <Routes>
-        <Route path="/transactions" element={<TransactionsPage />} />
-        <Route path="/transactions/new" element={<div>Add Transaction</div>} />
-        <Route path="/transactions/:id/edit" element={<div>Edit Transaction</div>} />
-      </Routes>
-    </MemoryRouter>
+    <I18nextProvider i18n={testI18n}>
+      <SettingsProvider>
+        <MemoryRouter initialEntries={[initialUrl]}>
+          <Routes>
+            <Route path="/transactions" element={<TransactionsPage />} />
+            <Route path="/transactions/new" element={<div>Add Transaction</div>} />
+            <Route path="/transactions/:id/edit" element={<div>Edit Transaction</div>} />
+          </Routes>
+        </MemoryRouter>
+      </SettingsProvider>
+    </I18nextProvider>
   )
 }
 

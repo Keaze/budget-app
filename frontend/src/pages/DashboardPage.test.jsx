@@ -1,19 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
+import { renderWithProviders } from '../test/renderWithProviders'
 import DashboardPage from './DashboardPage'
 
 vi.mock('../api/reports', () => ({
   getAccountBalances: vi.fn(),
   getSpendingByCategory: vi.fn(),
 }))
-vi.mock('../api/transactions', () => ({
-  getTransactions: vi.fn(),
-}))
-vi.mock('../api/categories', () => ({
-  getCategories: vi.fn(),
-}))
+vi.mock('../api/transactions', () => ({ getTransactions: vi.fn() }))
+vi.mock('../api/categories', () => ({ getCategories: vi.fn() }))
 
 import { getAccountBalances, getSpendingByCategory } from '../api/reports'
 import { getTransactions } from '../api/transactions'
@@ -22,10 +19,6 @@ import { getCategories } from '../api/categories'
 const mockAccounts = [
   { id: 'acc-1', name: 'Main Checking', account_type: 'CHECKING', currency: 'USD', balance: '1500.00' },
   { id: 'acc-2', name: 'Savings', account_type: 'SAVINGS', currency: 'USD', balance: '3000.00' },
-]
-const mockCategories = [
-  { id: 'cat-1', name: 'Groceries', color: '#22c55e' },
-  { id: 'cat-2', name: 'Transport', color: '#3b82f6' },
 ]
 const mockTransactions = [
   {
@@ -52,35 +45,34 @@ const mockSpending = [
   { category_id: 'cat-2', category_name: 'Transport', color: '#3b82f6', total: 45.0 },
 ]
 
-function renderPage(initialUrl = '/') {
-  return render(
-    <MemoryRouter initialEntries={[initialUrl]}>
-      <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/transactions" element={<div>Transactions Page</div>} />
-      </Routes>
-    </MemoryRouter>
+function renderPage() {
+  return renderWithProviders(
+    <Routes>
+      <Route path="/" element={<DashboardPage />} />
+      <Route path="/transactions" element={<div>Transactions Page</div>} />
+    </Routes>,
+    { route: '/' }
   )
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
   getAccountBalances.mockResolvedValue({ data: mockAccounts })
-  getTransactions.mockResolvedValue({
-    data: { data: mockTransactions, page: 1, page_size: 10, total: 2 },
-  })
+  getTransactions.mockResolvedValue({ data: { data: mockTransactions, page: 1, page_size: 10, total: 2 } })
   getSpendingByCategory.mockResolvedValue({ data: mockSpending })
-  getCategories.mockResolvedValue({ data: mockCategories })
+  getCategories.mockResolvedValue({ data: [] })
 })
 
 describe('DashboardPage — loading and error', () => {
   it('shows loading state initially', () => {
     getAccountBalances.mockReturnValue(new Promise(() => {}))
+    getTransactions.mockReturnValue(new Promise(() => {}))
+    getSpendingByCategory.mockReturnValue(new Promise(() => {}))
     renderPage()
     expect(screen.getByText(/loading dashboard/i)).toBeInTheDocument()
   })
 
-  it('shows error when any API call fails', async () => {
+  it('shows error when API fails', async () => {
     getAccountBalances.mockRejectedValue(new Error('Network error'))
     renderPage()
     expect(await screen.findByText('Failed to load dashboard.')).toBeInTheDocument()
@@ -100,15 +92,17 @@ describe('DashboardPage — account balances', () => {
     expect(screen.getAllByText('Savings').length).toBeGreaterThan(0)
   })
 
-  it('renders account balances', async () => {
+  it('renders individual account balances', async () => {
     renderPage()
     await screen.findByRole('heading', { name: 'Dashboard' })
-    expect(screen.getByText(/1500\.00/)).toBeInTheDocument()
-    expect(screen.getByText(/3000\.00/)).toBeInTheDocument()
+    expect(screen.getByText('$1,500.00')).toBeInTheDocument()
+    expect(screen.getByText('$3,000.00')).toBeInTheDocument()
   })
 
   it('shows empty state when no accounts', async () => {
     getAccountBalances.mockResolvedValue({ data: [] })
+    getTransactions.mockResolvedValue({ data: { data: [], page: 1, page_size: 10, total: 0 } })
+    getSpendingByCategory.mockResolvedValue({ data: [] })
     renderPage()
     await screen.findByRole('heading', { name: 'Dashboard' })
     expect(screen.getByText(/no accounts yet/i)).toBeInTheDocument()
@@ -145,9 +139,7 @@ describe('DashboardPage — recent transactions', () => {
   })
 
   it('shows empty state when no transactions', async () => {
-    getTransactions.mockResolvedValue({
-      data: { data: [], page: 1, page_size: 10, total: 0 },
-    })
+    getTransactions.mockResolvedValue({ data: { data: [], page: 1, page_size: 10, total: 0 } })
     renderPage()
     await screen.findByRole('heading', { name: 'Dashboard' })
     expect(screen.getByText(/no transactions yet/i)).toBeInTheDocument()
@@ -158,10 +150,8 @@ describe('DashboardPage — spending bars', () => {
   it('renders spending category names as buttons', async () => {
     renderPage()
     await screen.findByRole('heading', { name: 'Dashboard' })
-    const buttons = screen.getAllByRole('button', { name: /Groceries/i })
-    expect(buttons.length).toBeGreaterThan(0)
-    const transportButtons = screen.getAllByRole('button', { name: /Transport/i })
-    expect(transportButtons.length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: /groceries/i }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: /transport/i }).length).toBeGreaterThan(0)
   })
 
   it('shows empty state when no spending this month', async () => {
@@ -186,7 +176,7 @@ describe('DashboardPage — spending bars', () => {
     const user = userEvent.setup()
     renderPage()
     await screen.findByRole('heading', { name: 'Dashboard' })
-    const groceriesButton = screen.getAllByRole('button', { name: /Groceries/i })[0]
+    const groceriesButton = screen.getAllByRole('button', { name: /groceries/i })[0]
     await user.click(groceriesButton)
     await waitFor(() =>
       expect(screen.getByText('Transactions Page')).toBeInTheDocument()
@@ -204,13 +194,14 @@ describe('DashboardPage — mobile FAB', () => {
 })
 
 describe('DashboardPage — hero currency', () => {
-  it('hero total balance uses account currency instead of hardcoded $', async () => {
+  it('hero total balance uses account currency, not hardcoded USD', async () => {
     getAccountBalances.mockResolvedValue({ data: [
       { id: 'acc-1', name: 'Euro Account', account_type: 'CHECKING', currency: 'EUR', balance: '1000.00' },
     ]})
     getTransactions.mockResolvedValue({ data: { data: [], page: 1, page_size: 10, total: 0 } })
+    getSpendingByCategory.mockResolvedValue({ data: [] })
     renderPage()
     await screen.findByRole('heading', { name: 'Dashboard' })
-    expect(screen.getByTestId('hero-total-balance')).toHaveTextContent('EUR 1000.00')
+    expect(screen.getByTestId('hero-total-balance')).toHaveTextContent('€1,000.00')
   })
 })

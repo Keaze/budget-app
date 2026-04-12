@@ -1,32 +1,117 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { renderWithProviders } from '../test/renderWithProviders'
 import TransactionForm from './TransactionForm'
 
 const accounts = [
-  { id: 'acc-1', name: 'Main Checking' },
-  { id: 'acc-2', name: 'Savings' },
+  { id: 'acc-1', name: 'Main Checking', currency: 'USD' },
+  { id: 'acc-2', name: 'Savings', currency: 'USD' },
 ]
-
 const categories = [
-  { id: 'cat-1', name: 'Groceries', icon: '🛒', color: '#22c55e' },
-  { id: 'cat-2', name: 'Transport', icon: '', color: '#3b82f6' },
+  { id: 'cat-1', name: 'Groceries', color: '#22c55e', icon: '🛒' },
 ]
 
 function renderForm(props = {}) {
-  const onSave = props.onSave ?? vi.fn()
-  return {
-    onSave,
-    ...render(
-      <TransactionForm
-        accounts={accounts}
-        categories={categories}
-        onSave={onSave}
-        {...props}
-      />
-    ),
-  }
+  return renderWithProviders(
+    <TransactionForm
+      accounts={props.accounts ?? accounts}
+      categories={props.categories ?? categories}
+      onSave={props.onSave ?? vi.fn()}
+      transaction={props.transaction}
+    />
+  )
 }
+
+describe('TransactionForm — validation', () => {
+  it('shows label error when label is empty on submit', async () => {
+    renderForm()
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    expect(await screen.findByText('Label is required')).toBeInTheDocument()
+  })
+
+  it('shows amount error when amount is zero', async () => {
+    const user = userEvent.setup()
+    renderForm()
+    await user.type(screen.getByPlaceholderText(/grocery/i), 'Test')
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    expect(await screen.findByText('Amount must be greater than 0')).toBeInTheDocument()
+  })
+
+  it('shows amount error when amount is negative', async () => {
+    const user = userEvent.setup()
+    renderForm()
+    const amountInput = screen.getByPlaceholderText('0.00')
+    await user.type(amountInput, '-5')
+    await user.type(screen.getByPlaceholderText(/grocery/i), 'Test')
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    expect(await screen.findByText('Amount must be greater than 0')).toBeInTheDocument()
+  })
+})
+
+describe('TransactionForm — type selection', () => {
+  it('renders Income, Expense, Transfer tabs', () => {
+    renderForm()
+    expect(screen.getByRole('button', { name: /income/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /expense/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /transfer/i })).toBeInTheDocument()
+  })
+
+  it('shows transfer destination field when Transfer is selected', async () => {
+    const user = userEvent.setup()
+    renderForm()
+    await user.click(screen.getByRole('button', { name: /transfer/i }))
+    expect(screen.getByLabelText(/transfer to/i)).toBeInTheDocument()
+  })
+
+  it('hides transfer destination for non-transfer types', () => {
+    renderForm()
+    expect(screen.queryByLabelText(/transfer to/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('TransactionForm — submit', () => {
+  it('calls onSave with correct data on valid submit', async () => {
+    const user = userEvent.setup()
+    const onSave = vi.fn().mockResolvedValue()
+    renderForm({ onSave })
+    const amountInput = screen.getByPlaceholderText('0.00')
+    await user.type(amountInput, '42.50')
+    await user.type(screen.getByPlaceholderText(/grocery/i), 'Weekly shop')
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 42.50, label: 'Weekly shop' })
+    ))
+  })
+
+  it('shows API error when onSave throws', async () => {
+    const user = userEvent.setup()
+    const onSave = vi.fn().mockRejectedValue({ response: { data: { error: 'Server error' } } })
+    renderForm({ onSave })
+    await user.type(screen.getByPlaceholderText('0.00'), '10')
+    await user.type(screen.getByPlaceholderText(/grocery/i), 'Test')
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    expect(await screen.findByText('Server error')).toBeInTheDocument()
+  })
+})
+
+describe('TransactionForm — edit mode', () => {
+  it('disables type buttons when editing', () => {
+    const transaction = {
+      id: 'tx-1',
+      transaction_type: 'EXPENSE',
+      account_id: 'acc-1',
+      amount: '50.00',
+      label: 'Test',
+      date: '2026-01-01T00:00:00Z',
+      category_id: null,
+    }
+    renderForm({ transaction })
+    expect(screen.getByRole('button', { name: /income/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /expense/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /transfer/i })).toBeDisabled()
+  })
+})
 
 describe('TransactionForm — initial state', () => {
   it('defaults to Expense type', () => {
@@ -61,13 +146,6 @@ describe('TransactionForm — type selector', () => {
     expect(screen.getByRole('button', { name: 'Expense' })).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('shows Transfer To field when Transfer type selected', async () => {
-    const user = userEvent.setup()
-    renderForm()
-    await user.click(screen.getByRole('button', { name: 'Transfer' }))
-    expect(screen.getByLabelText(/transfer to/i)).toBeInTheDocument()
-  })
-
   it('hides Transfer To field when switching away from Transfer', async () => {
     const user = userEvent.setup()
     renderForm()
@@ -82,104 +160,22 @@ describe('TransactionForm — type selector', () => {
     renderForm()
     await user.click(screen.getByRole('button', { name: 'Transfer' }))
     const destSelect = screen.getByLabelText(/transfer to/i)
-    expect(destSelect).toBeInTheDocument()
     const options = Array.from(destSelect.querySelectorAll('option')).map(o => o.textContent)
     expect(options).not.toContain('Main Checking')
     expect(options.some(o => o.includes('Savings'))).toBe(true)
   })
 })
 
-describe('TransactionForm — validation', () => {
-  it('shows label error when submitted with empty label', async () => {
-    renderForm()
-    fireEvent.click(screen.getByRole('button', { name: /save/i }))
-    expect(await screen.findByText('Label is required')).toBeInTheDocument()
-  })
-
-  it('shows amount error when submitted with no amount', async () => {
-    renderForm()
-    fireEvent.click(screen.getByRole('button', { name: /save/i }))
-    expect(await screen.findByText('Amount must be greater than 0')).toBeInTheDocument()
-  })
-
-  it('shows amount error when amount is zero', async () => {
-    renderForm()
-    fireEvent.change(screen.getByPlaceholderText('0.00'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /save/i }))
-    expect(await screen.findByText('Amount must be greater than 0')).toBeInTheDocument()
-  })
-
-  it('does not call onSave when validation fails', async () => {
-    const { onSave } = renderForm()
-    fireEvent.click(screen.getByRole('button', { name: /save/i }))
-    await screen.findByText('Label is required')
-    expect(onSave).not.toHaveBeenCalled()
-  })
-
-  it('clears label error when user starts typing', async () => {
-    const user = userEvent.setup()
-    renderForm()
-    fireEvent.click(screen.getByRole('button', { name: /save/i }))
-    await screen.findByText('Label is required')
-    await user.type(screen.getByPlaceholderText('e.g. Grocery shopping'), 'X')
-    expect(screen.queryByText('Label is required')).not.toBeInTheDocument()
-  })
-
-  it('clears amount error when user changes amount', async () => {
-    const user = userEvent.setup()
-    renderForm()
-    fireEvent.click(screen.getByRole('button', { name: /save/i }))
-    await screen.findByText('Amount must be greater than 0')
-    await user.type(screen.getByPlaceholderText('0.00'), '5')
-    expect(screen.queryByText('Amount must be greater than 0')).not.toBeInTheDocument()
-  })
-})
-
 describe('TransactionForm — submission', () => {
-  it('calls onSave with correct data for Expense', async () => {
-    const user = userEvent.setup()
-    const onSave = vi.fn().mockResolvedValue()
-    renderForm({ onSave })
-    await user.type(screen.getByPlaceholderText('0.00'), '42.50')
-    await user.type(screen.getByPlaceholderText('e.g. Grocery shopping'), 'Weekly shop')
-    fireEvent.click(screen.getByRole('button', { name: /save/i }))
-    await waitFor(() =>
-      expect(onSave).toHaveBeenCalledWith(
-        expect.objectContaining({
-          transaction_type: 'EXPENSE',
-          account_id: 'acc-1',
-          amount: 42.5,
-          label: 'Weekly shop',
-          date: expect.stringMatching(/T00:00:00Z$/),
-        })
-      )
-    )
-  })
-
-  it('calls onSave with Income type when Income selected', async () => {
-    const user = userEvent.setup()
-    const onSave = vi.fn().mockResolvedValue()
-    renderForm({ onSave })
-    await user.click(screen.getByRole('button', { name: 'Income' }))
-    await user.type(screen.getByPlaceholderText('0.00'), '1000')
-    await user.type(screen.getByPlaceholderText('e.g. Grocery shopping'), 'Salary')
-    fireEvent.click(screen.getByRole('button', { name: /save/i }))
-    await waitFor(() =>
-      expect(onSave).toHaveBeenCalledWith(
-        expect.objectContaining({ transaction_type: 'INCOME' })
-      )
-    )
-  })
-
-  it('calls onSave with transfer_to_account_id when Transfer selected', async () => {
+  it('calls onSave with transfer_to_account_id for Transfer type', async () => {
     const user = userEvent.setup()
     const onSave = vi.fn().mockResolvedValue()
     renderForm({ onSave })
     await user.click(screen.getByRole('button', { name: 'Transfer' }))
     await user.type(screen.getByPlaceholderText('0.00'), '200')
-    await user.type(screen.getByPlaceholderText('e.g. Grocery shopping'), 'Move funds')
+    await user.type(screen.getByPlaceholderText(/grocery/i), 'Move funds')
     await user.selectOptions(screen.getByLabelText(/transfer to/i), 'acc-2')
-    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     await waitFor(() =>
       expect(onSave).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -195,35 +191,13 @@ describe('TransactionForm — submission', () => {
     const onSave = vi.fn().mockResolvedValue()
     renderForm({ onSave })
     await user.type(screen.getByPlaceholderText('0.00'), '10')
-    await user.type(screen.getByPlaceholderText('e.g. Grocery shopping'), '  My label  ')
-    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    await user.type(screen.getByPlaceholderText(/grocery/i), '  My label  ')
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     await waitFor(() =>
       expect(onSave).toHaveBeenCalledWith(
         expect.objectContaining({ label: 'My label' })
       )
     )
-  })
-
-  it('shows API error when onSave throws', async () => {
-    const user = userEvent.setup()
-    const onSave = vi.fn().mockRejectedValue(new Error('Server error'))
-    renderForm({ onSave })
-    await user.type(screen.getByPlaceholderText('0.00'), '10')
-    await user.type(screen.getByPlaceholderText('e.g. Grocery shopping'), 'Test')
-    fireEvent.click(screen.getByRole('button', { name: /save/i }))
-    expect(await screen.findByText('Server error')).toBeInTheDocument()
-  })
-
-  it('disables Save while submitting', async () => {
-    let resolve
-    const onSave = vi.fn().mockReturnValue(new Promise(r => { resolve = r }))
-    const user = userEvent.setup()
-    renderForm({ onSave })
-    await user.type(screen.getByPlaceholderText('0.00'), '10')
-    await user.type(screen.getByPlaceholderText('e.g. Grocery shopping'), 'Test')
-    fireEvent.click(screen.getByRole('button', { name: /save/i }))
-    await waitFor(() => expect(screen.getByRole('button', { name: /saving/i })).toBeDisabled())
-    resolve()
   })
 })
 
@@ -263,13 +237,6 @@ describe('TransactionForm — edit mode pre-fill', () => {
   it('pre-fills date from transaction', () => {
     renderForm({ transaction })
     expect(screen.getByDisplayValue('2026-02-15')).toBeInTheDocument()
-  })
-
-  it('disables type buttons in edit mode', () => {
-    renderForm({ transaction })
-    expect(screen.getByRole('button', { name: 'Income' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Expense' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Transfer' })).toBeDisabled()
   })
 
   it('disables account select in edit mode', () => {

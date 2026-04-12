@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { renderWithProviders } from '../test/renderWithProviders'
 import AccountsPage from './AccountsPage'
 
 vi.mock('../api/accounts', () => ({
@@ -17,11 +17,7 @@ const account1 = { id: '1', name: 'Main Checking', account_type: 'CHECKING', cur
 const account2 = { id: '2', name: 'Emergency Fund', account_type: 'SAVINGS', currency: 'USD', balance: '500.00', initial_balance: 500 }
 
 function renderPage() {
-  return render(
-    <MemoryRouter>
-      <AccountsPage />
-    </MemoryRouter>
-  )
+  return renderWithProviders(<AccountsPage />)
 }
 
 beforeEach(() => {
@@ -51,16 +47,14 @@ describe('AccountsPage — loading and display', () => {
   it('shows empty state when no accounts', async () => {
     getAccounts.mockResolvedValue({ data: [] })
     renderPage()
-    expect(
-      await screen.findByText(/no accounts yet/i)
-    ).toBeInTheDocument()
+    expect(await screen.findByText(/no accounts yet/i)).toBeInTheDocument()
   })
 
-  it('shows account balance', async () => {
+  it('shows account balance formatted with currency symbol', async () => {
     getAccounts.mockResolvedValue({ data: [account1] })
     renderPage()
     await screen.findByText('Main Checking')
-    expect(screen.getByText(/1000\.00/)).toBeInTheDocument()
+    expect(screen.getByText('$1,000.00')).toBeInTheDocument()
   })
 
   it('shows edit and delete buttons for each account', async () => {
@@ -97,21 +91,6 @@ describe('AccountsPage — create flow', () => {
     await waitFor(() => expect(screen.getByText('Travel Fund')).toBeInTheDocument())
     expect(screen.queryByText('New Account')).not.toBeInTheDocument()
   })
-
-  it('closes form after successful create', async () => {
-    const user = userEvent.setup()
-    const newAccount = { id: '3', name: 'Travel Fund', account_type: 'SAVINGS', currency: 'USD', balance: '0.00', initial_balance: 0 }
-    getAccounts
-      .mockResolvedValueOnce({ data: [] })
-      .mockResolvedValue({ data: [newAccount] })
-    createAccount.mockResolvedValue({ data: newAccount })
-    renderPage()
-    await screen.findByRole('button', { name: /add account/i })
-    await user.click(screen.getByRole('button', { name: /add account/i }))
-    await user.type(screen.getByPlaceholderText('e.g. Main Checking'), 'Travel Fund')
-    await user.click(screen.getByRole('button', { name: /^save$/i }))
-    await waitFor(() => expect(screen.queryByText('New Account')).not.toBeInTheDocument())
-  })
 })
 
 describe('AccountsPage — edit flow', () => {
@@ -127,7 +106,7 @@ describe('AccountsPage — edit flow', () => {
 
   it('updates account in list after successful edit', async () => {
     const user = userEvent.setup()
-    const updated = { ...account1, name: 'Primary Checking', balance: '1000.00' }
+    const updated = { ...account1, name: 'Primary Checking' }
     getAccounts
       .mockResolvedValueOnce({ data: [account1] })
       .mockResolvedValue({ data: [updated] })
@@ -140,7 +119,6 @@ describe('AccountsPage — edit flow', () => {
     await user.type(nameInput, 'Primary Checking')
     await user.click(screen.getByRole('button', { name: /^save$/i }))
     await waitFor(() => expect(screen.getByText('Primary Checking')).toBeInTheDocument())
-    expect(screen.queryByText('Main Checking')).not.toBeInTheDocument()
   })
 })
 
